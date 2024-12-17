@@ -6,7 +6,7 @@ import { BearerTokenAuthProvider, createApiClient, TeamsUserCredential } from "@
 import { TeamsFxContext } from "../Context";
 import config from "./lib/config";
 
-const functionName = config.apiName || "myFunc";
+const functionName = config.apiName || "getUserProfile";
 
 async function callFunction(teamsUserCredential: TeamsUserCredential) {
   try {

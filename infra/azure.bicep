@@ -25,7 +25,7 @@ var allowedClientApplications = '"${teamsMobileOrDesktopAppClientId}","${teamsWe
 resource swa 'Microsoft.Web/staticSites@2022-09-01' = {
   name: staticWebAppName
   // SWA do not need location setting
-  location: 'centralus'
+  location: 'eastasia'
   sku: {
     name: staticWebAppSku
     tier: staticWebAppSku

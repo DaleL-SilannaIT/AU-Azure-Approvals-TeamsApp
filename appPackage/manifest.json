@@ -14,12 +14,12 @@
         "outline": "outline.png"
     },
     "name": {
-        "short": "TeamsApp${{APP_NAME_SUFFIX}}",
-        "full": "Full name for TeamsApp"
+        "short": "AU-Azure-Approvals-TeamsApp${{APP_NAME_SUFFIX}}",
+        "full": "AU-Azure-Approvals-TeamsApp"
     },
     "description": {
-        "short": "Short description of TeamsApp",
-        "full": "Full description of TeamsApp"
+        "short": "Short description of AU-Azure-Approvals-TeamsApp",
+        "full": "Full description of AU-Azure-Approvals-TeamsApp"
     },
     "accentColor": "#FFFFFF",
     "bots": [],

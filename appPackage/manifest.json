@@ -43,8 +43,7 @@
         "messageTeamMembers"
     ],
     "validDomains": [
-        "${{TAB_HOSTNAME}}",
-        "*.azurewebsites.net"
+        "${{TAB_HOSTNAME}}"
     ],
     "webApplicationInfo": {
         "id": "${{AAD_APP_CLIENT_ID}}",

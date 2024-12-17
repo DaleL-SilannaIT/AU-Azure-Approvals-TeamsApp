@@ -1,26 +1,20 @@
 {
   "routes": [
     {
-      "route": "/api/*",
-      "allowedRoles": ["anonymous", "authenticated"]
+      "route": "/auth-start.html",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/auth-end.html",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/.auth/*",
+      "allowedRoles": ["anonymous"]
     },
     {
       "route": "/*",
       "allowedRoles": ["authenticated"]
-    },
-    {
-      "route": "/.auth/login/aad",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/login",
-      "redirect": "/.auth/login/aad",
-      "statusCode": 302
-    },
-    {
-      "route": "/logout",
-      "redirect": "/.auth/logout",
-      "statusCode": 302
     }
   ],
   "navigationFallback": {

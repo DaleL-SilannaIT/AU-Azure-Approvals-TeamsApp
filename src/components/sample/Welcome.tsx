@@ -71,8 +71,8 @@ export function Welcome(props: { showFunction?: boolean; environment?: string })
             {selectedValue === "local" && (
               <div>
                 <EditCode showFunction={showFunction} />
-                <CurrentUser userName={userName} />
-                {showFunction && <AzureFunctions />}
+                {/* <CurrentUser userName={userName} /> */}
+                {/* {showFunction && <AzureFunctions />} */}
               </div>
             )}
             {selectedValue === "azure" && (

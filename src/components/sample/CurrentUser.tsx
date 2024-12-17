@@ -1,5 +1,3 @@
-import React from "react";
-
 export function CurrentUser(props: { userName?: string }) {
   const { userName } = {
     userName: "",

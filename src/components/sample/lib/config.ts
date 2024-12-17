@@ -1,8 +1,8 @@
 const config = {
-  initiateLoginEndpoint: `${process.env.TAB_ENDPOINT}/auth-start.html`,
-  clientId: process.env.AAD_APP_CLIENT_ID,
-  apiEndpoint: process.env.API_FUNCTION_ENDPOINT,
-  apiName: process.env.API_FUNCTION_GETUSERPROFILE,
+  initiateLoginEndpoint: process.env.REACT_APP_START_LOGIN_PAGE_URL,
+  clientId: process.env.REACT_APP_CLIENT_ID,
+  apiEndpoint: process.env.REACT_APP_FUNC_ENDPOINT,
+  apiName: process.env.REACT_APP_FUNC_NAME,
 };
 
 export default config;

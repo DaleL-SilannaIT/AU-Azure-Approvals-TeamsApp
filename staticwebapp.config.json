@@ -17,6 +17,10 @@
       "allowedRoles": ["authenticated"]
     }
   ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/images/*", "/*.css", "/*.js"]
+  },
   "responseOverrides": {
     "401": {
       "statusCode": 302,

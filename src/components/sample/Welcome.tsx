@@ -9,8 +9,8 @@ import {
 } from "@fluentui/react-components";
 import "./Welcome.css";
 import { EditCode } from "./EditCode";
-//import { AzureFunctions } from "./AzureFunctions";
-//import { CurrentUser } from "./CurrentUser";
+import { AzureFunctions } from "./AzureFunctions";
+import { CurrentUser } from "./CurrentUser";
 import { useData } from "@microsoft/teamsfx-react";
 import { Deploy } from "./Deploy";
 import { Publish } from "./Publish";
@@ -71,8 +71,8 @@ export function Welcome(props: { showFunction?: boolean; environment?: string })
             {selectedValue === "local" && (
               <div>
                 <EditCode showFunction={showFunction} />
-                {/* <CurrentUser userName={userName} />
-                {showFunction && <AzureFunctions />} */}
+                {/* <CurrentUser userName={userName} /> */}
+                {/* {showFunction && <AzureFunctions />} */}
               </div>
             )}
             {selectedValue === "azure" && (

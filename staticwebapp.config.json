@@ -18,8 +18,7 @@
     }
   ],
   "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/images/*", "/*.css", "/*.js"]
+    "rewrite": "/index.html"
   },
   "responseOverrides": {
     "401": {

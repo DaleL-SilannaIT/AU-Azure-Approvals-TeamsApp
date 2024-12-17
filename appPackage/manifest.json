@@ -14,7 +14,7 @@
         "outline": "outline.png"
     },
     "name": {
-        "short": "AU-Azure-Approvals-TeamsApp${{APP_NAME_SUFFIX}}",
+        "short": "Approvals${{APP_NAME_SUFFIX}}",
         "full": "AU-Azure-Approvals-TeamsApp"
     },
     "description": {

@@ -1,0 +1,10 @@
+BROWSER=none
+HTTPS=true
+PORT=53000
+SSL_CRT_FILE=C:/Users/dalel/.fx/certificate/localhost.crt
+SSL_KEY_FILE=C:/Users/dalel/.fx/certificate/localhost.key
+REACT_APP_CLIENT_ID=56111f7a-a53e-4939-85ce-bcb647af03ed
+REACT_APP_START_LOGIN_PAGE_URL=https://localhost:53000/auth-start.html
+REACT_APP_FUNC_NAME=data
+REACT_APP_FUNC_ENDPOINT=http://localhost:7071
+REACT_APP_API_FUNCTION_ENDPOINT=http://localhost:7071

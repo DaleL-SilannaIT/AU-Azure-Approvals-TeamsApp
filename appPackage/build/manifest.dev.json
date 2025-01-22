@@ -1,0 +1,59 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.17",
+    "version": "1.0.0",
+    "id": "c16a14ed-4e91-41b0-a677-85c4da302537",
+    "developer": {
+        "name": "Teams App, Inc.",
+        "websiteUrl": "https://purple-plant-0a243e210.4.azurestaticapps.net",
+        "privacyUrl": "https://purple-plant-0a243e210.4.azurestaticapps.net/index.html#/privacy",
+        "termsOfUseUrl": "https://purple-plant-0a243e210.4.azurestaticapps.net/index.html#/termsofuse"
+    },
+    "icons": {
+        "color": "color.png",
+        "outline": "outline.png"
+    },
+    "name": {
+        "short": "graph-connector-appdev",
+        "full": "Full name for graph-connector-app"
+    },
+    "description": {
+        "short": "Short description of graph-connector-app",
+        "full": "Full description of graph-connector-app"
+    },
+    "accentColor": "#FFFFFF",
+    "bots": [],
+    "composeExtensions": [],
+    "configurableTabs": [
+        {
+            "configurationUrl": "https://purple-plant-0a243e210.4.azurestaticapps.net/index.html#/config",
+            "canUpdateConfiguration": true,
+            "scopes": [
+                "team",
+                "groupChat"
+            ]
+        }
+    ],
+    "staticTabs": [
+        {
+            "entityId": "index",
+            "name": "Personal Tab",
+            "contentUrl": "https://purple-plant-0a243e210.4.azurestaticapps.net/index.html#/tab",
+            "websiteUrl": "https://purple-plant-0a243e210.4.azurestaticapps.net/index.html#/tab",
+            "scopes": [
+                "personal"
+            ]
+        }
+    ],
+    "permissions": [
+        "identity",
+        "messageTeamMembers"
+    ],
+    "validDomains": [
+        "purple-plant-0a243e210.4.azurestaticapps.net"
+    ],
+    "webApplicationInfo": {
+        "id": "a8016a9e-e9b4-4d55-8bd1-595fd612a8ab",
+        "resource": "api://purple-plant-0a243e210.4.azurestaticapps.net/a8016a9e-e9b4-4d55-8bd1-595fd612a8ab"
+    }
+}

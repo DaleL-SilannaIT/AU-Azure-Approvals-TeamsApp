@@ -1,0 +1,29 @@
+{
+    "name": "teamsfx-template-api",
+    "version": "1.0.0",
+    "engines": {
+        "node": "18"
+    },
+    "scripts": {
+        "dev:teamsfx": "env-cmd --silent -f .localConfigs npm run dev",
+        "dev": "func start --typescript --language-worker=\"--inspect=9229\" --port \"7071\" --cors \"*\"",
+        "watch:teamsfx": "tsc --watch",
+        "build": "tsc",
+        "watch": "tsc -w",
+        "prestart": "npm run build",
+        "start": "npx func start"
+    },
+    "dependencies": {
+        "@azure/functions": "^4.2.0",
+        "@microsoft/microsoft-graph-client": "^3.0.0",
+        "@microsoft/teamsfx": "^2.0.0",
+        "csv-parse": "^5.0.4",
+        "isomorphic-fetch": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^18.7.18",
+        "env-cmd": "^10.1.0",
+        "typescript": "^4.4.4"
+    },
+    "main": "dist/src/functions/*.js"
+}

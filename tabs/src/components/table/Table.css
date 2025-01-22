@@ -1,0 +1,6 @@
+.table-container {
+    height: 100%; /* Adjust height as needed */
+    overflow-y: auto;
+    overflow-x: auto;
+    flex-grow: 1;
+  }

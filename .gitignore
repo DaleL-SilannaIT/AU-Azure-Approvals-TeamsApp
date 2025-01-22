@@ -1,0 +1,25 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env
+.deployment
+
+
+# dependencies
+/tabs/node_modules
+
+# testing
+/tabs/coverage
+
+# production
+/tabs/build

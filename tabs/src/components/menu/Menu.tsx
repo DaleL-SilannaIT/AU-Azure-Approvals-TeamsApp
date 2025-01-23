@@ -1,5 +1,11 @@
 import * as React from 'react';
+import { useState } from 'react';
 import { Nav, INavStyles, INavLinkGroup } from '@fluentui/react/lib/Nav';
+import { initializeIcons } from '@fluentui/react/lib/Icons';
+import { IconButton } from '@fluentui/react/lib/Button';
+
+// Initialize icons
+initializeIcons();
 
 const navStyles: Partial<INavStyles> = {
   root: {
@@ -22,71 +28,73 @@ const navLinkGroups: INavLinkGroup[] = [
   {
     links: [
       {
-        name: 'Home',
-        url: 'http://example.com',
-        expandAriaLabel: 'Expand Home section',
+        name: 'New Approval',
+        url: '#/tab/new_approval',
         title: '',
-        links: [
-          {
-            name: 'Activity',
-            url: 'http://msn.com',
-            key: 'key1',
-            target: '_blank',
-            title: '',
-          },
-          {
-            name: 'MSN',
-            url: 'http://msn.com',
-            disabled: true,
-            key: 'key2',
-            target: '_blank',
-            title: '',
-          },
-        ],
-        isExpanded: true,
+        key: 'newApproval',
+        iconProps: { iconName: 'Add' }
       },
       {
-        name: 'Shared Documents and Files',
-        url: 'http://example.com',
-        key: 'key3',
-        target: '_blank',
+        name: 'My Approvals',
+        url: '#/tab/my_approvals',
+        key: 'myApprovals',
         title: '',
+        iconProps: { iconName: 'CheckMark' }
       },
       {
-        name: 'Pages',
-        url: 'http://msn.com',
-        key: 'key4',
-        target: '_blank',
+        name: 'Past Approvals',
+        url: '#/tab/past_approvals',
+        key: 'pastApprovals',
         title: '',
+        iconProps: { iconName: 'History' }
       },
       {
-        name: 'Notebook',
-        url: 'http://msn.com',
-        key: 'key5',
-        disabled: true,
+        name: 'Admin',
+        url: '#/tab/admin',
+        key: 'admin',
         title: '',
-      },
-      {
-        name: 'Communication and Media',
-        url: 'http://msn.com',
-        key: 'key6',
-        target: '_blank',
-        title: '',
-      },
-      {
-        name: 'News',
-        url: 'http://cnn.com',
-        icon: 'News',
-        key: 'key7',
-        target: '_blank',
-        title: '',
-      },
+        iconProps: { iconName: 'Admin' }
+      }
     ],
   },
 ];
 
-export const NavWrappedExample: React.FunctionComponent = () => {
+interface MenuProps {
+  isCollapsed: boolean;
+  toggleCollapse: () => void;
+}
+
+export const Menu: React.FunctionComponent<MenuProps> = ({ isCollapsed, toggleCollapse }) => {
+  const collapsedNavLinkGroups = navLinkGroups.map(group => ({
+    ...group,
+    links: group.links.map(link => ({
+      ...link,
+      name: isCollapsed ? '' : link.name,
+    })),
+  }));
+
   return (
-    <Nav selectedKey="key6" ariaLabel="Nav example with wrapped link text" styles={navStyles} groups={navLinkGroups} />
+    <div>
+      <IconButton
+        iconProps={{ iconName: isCollapsed ? 'ChevronRight' : 'ChevronLeft' }}
+        title="Collapse menu"
+        ariaLabel="Collapse menu"
+        onClick={toggleCollapse}
+      />
+      <Nav
+        groups={collapsedNavLinkGroups}
+        styles={{
+          ...navStyles,
+          root: {
+            height: 350,
+            boxSizing: 'border-box',
+            border: '1px solid #eee',
+            overflowY: 'auto',
+            width: isCollapsed ? 48 : 208,
+            transition: 'width 0.3s',
+          },
+        }}
+      />
+    </div>
   );
 };

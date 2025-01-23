@@ -7,7 +7,6 @@ import { useGraphWithCredential } from "@microsoft/teamsfx-react";
 import { Query } from "./Query";
 import { Scopes } from "./lib/constants";
 import { TeamsFxContext } from "../Context";
-import { NavWrappedExample } from "../menu/Menu";
 
 export function Welcome() {
   const { teamsUserCredential } = useContext(TeamsFxContext);
@@ -30,7 +29,7 @@ export function Welcome() {
       {!loading && data && (
         <div className="welcome page">
           <div className="narrow page-padding">
-            <NavWrappedExample />
+            
             <Image src="hello.png" />
             <h1 className="center">Hello, {data.profile.displayName}!</h1>
             <p className="center">

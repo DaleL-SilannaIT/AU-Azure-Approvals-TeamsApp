@@ -1,16 +1,18 @@
 .tab-container {
-    display: flex;
-    min-height: 100vh;
-  }
-  
-  .nav-section {
-    flex: 0 0 208px;  /* Match nav width from Menu component */
-  }
-  
-  .content-section {
-    flex: 1;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Prevent the whole screen from scrolling */
-  }
+  display: flex;
+  min-height: 100vh;
+}
+
+.nav-section {
+  flex: 0 0 auto; /* Adjust to fit content */
+  transition: width 0.3s;
+}
+
+.content-section {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent the whole screen from scrolling */
+  transition: margin-left 0.3s;
+}

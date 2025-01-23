@@ -1,6 +1,5 @@
-import * as React from 'react';
-import { useState } from 'react';
-import { Nav, INavStyles, INavLinkGroup } from '@fluentui/react/lib/Nav';
+import React, { useState } from 'react';
+import { Nav, INavStyles, INavLinkGroup, INavLink } from '@fluentui/react/lib/Nav';
 import { initializeIcons } from '@fluentui/react/lib/Icons';
 import { IconButton } from '@fluentui/react/lib/Button';
 
@@ -65,6 +64,14 @@ interface MenuProps {
 }
 
 export const Menu: React.FunctionComponent<MenuProps> = ({ isCollapsed, toggleCollapse }) => {
+  const [selectedKey, setSelectedKey] = useState<string>('myApprovals');
+
+  const onLinkClick = (ev?: React.MouseEvent<HTMLElement>, item?: INavLink) => {
+    if (item && item.key) {
+      setSelectedKey(item.key);
+    }
+  };
+
   const collapsedNavLinkGroups = navLinkGroups.map(group => ({
     ...group,
     links: group.links.map(link => ({
@@ -83,6 +90,8 @@ export const Menu: React.FunctionComponent<MenuProps> = ({ isCollapsed, toggleCo
       />
       <Nav
         groups={collapsedNavLinkGroups}
+        selectedKey={selectedKey}
+        onLinkClick={onLinkClick}
         styles={{
           ...navStyles,
           root: {

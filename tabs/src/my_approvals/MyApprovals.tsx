@@ -1,8 +1,6 @@
 import { useContext, useState } from "react";
-import { TeamsFxContext } from "./Context";
-import { Menu } from "./menu/Menu";
-import { ShimmerApplicationExample } from "./table/Table";
-import "./Tab.css";
+import { TeamsFxContext } from "../common/Context";
+import { MyApprovalsTable } from "./components/table/Table";
 
 export default function MyApprovals() {
   const { themeString } = useContext(TeamsFxContext);
@@ -22,7 +20,7 @@ export default function MyApprovals() {
             : "contrast"
       }
     >
-      <ShimmerApplicationExample />
+      <MyApprovalsTable />
     </div>
   );
 }

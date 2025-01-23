@@ -4,15 +4,14 @@ import { HashRouter as Router, Navigate, Route, Routes } from "react-router-dom"
 import { useTeamsUserCredential } from "@microsoft/teamsfx-react";
 import Privacy from "./Privacy";
 import TermsOfUse from "./TermsOfUse";
-import Tab from "./Tab";
 import TabConfig from "./TabConfig";
-import NewApproval from "./NewApproval";
-import MyApprovals from "./MyApprovals";
-import PastApprovals from "./PastApprovals";
-import Admin from "./Admin";
+import NewApproval from "../new_approval/NewApproval";
+import MyApprovals from "../my_approvals/MyApprovals";
+import PastApprovals from "../past_approvals/PastApprovals";
+import Admin from "../admin/Admin";
 import { TeamsFxContext } from "./Context";
-import config from "./sample/lib/config";
-import { Menu } from "./menu/Menu";
+import config from "./lib/config";
+import { Menu } from "./components/menu/Menu";
 import "./Tab.css";
 
 export default function App() {

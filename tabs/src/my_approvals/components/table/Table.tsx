@@ -2,7 +2,7 @@ import * as React from 'react';
 import { IColumn, SelectionMode, IListProps } from '@fluentui/react';
 import { ShimmeredDetailsList } from '@fluentui/react/lib/ShimmeredDetailsList';
 import { useEffect, useState } from 'react';
-import { ApprovalRecord } from '../../../../api/src/database/interfaces/approvalRecord';
+import { ApprovalRecord } from '../../../../../api/src/database/interfaces/approvalRecord';
 import './Table.css';
 
 const columns: IColumn[] = [
@@ -27,7 +27,7 @@ const onRenderItemColumn = (item?: ApprovalRecord, index?: number, column?: ICol
   return item[column.key as keyof ApprovalRecord];
 };
 
-export const ShimmerApplicationExample: React.FunctionComponent = () => {
+export const MyApprovalsTable: React.FunctionComponent = () => {
   const [items, setItems] = useState<ApprovalRecord[] | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

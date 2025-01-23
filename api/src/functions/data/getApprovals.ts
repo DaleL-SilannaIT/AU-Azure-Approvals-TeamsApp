@@ -1,9 +1,10 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext, HttpMethod } from "@azure/functions";
 import sql from 'mssql';
 import { dbConfig } from '../../database/dbConfig';
+import { ApprovalRecord } from '../../database/interfaces/approvalRecord';
 
 const functionConfig: { methods: HttpMethod[], authLevel: "function" | "anonymous" | "admin", route: string, handler: (req: HttpRequest, context: InvocationContext) => Promise<HttpResponseInit> } = {
-  methods: ["GET"],  // Add GET for easier testing
+  methods: ["POST"],  // Change to POST to accept form-data
   authLevel: "anonymous",
   route: "data",  // Explicit route
   handler: async function (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
@@ -12,25 +13,36 @@ const functionConfig: { methods: HttpMethod[], authLevel: "function" | "anonymou
     try {
       poolConnection = await sql.connect(dbConfig);
 
-        console.log("Reading rows from the Table...");
-        var resultSet = await poolConnection.request().query(`SELECT * FROM Approvals`);
+      // Parse form-data parameters
+      const params = await req.formData();
+      const filters = {};
+      const sortField = params.get('sortField') as keyof ApprovalRecord | undefined;
+      const sortOrder = params.get('sortOrder') === 'desc' ? 'DESC' : 'ASC';
 
-        console.log(`${resultSet.recordset.length} rows returned.`);
-
-        // output column headers
-        var columns = "";
-        for (var column in resultSet.recordset.columns) {
-            columns += column + ", ";
+      // Build filters object
+      for (const key of params.keys()) {
+        if (key in filters) {
+          filters[key as keyof ApprovalRecord] = params.get(key) as string;
         }
-        console.log("%s\t", columns.substring(0, columns.length - 2));
+      }
 
-        // output row contents from default record set
-        resultSet.recordset.forEach(row => {
-            console.log("%s\t%s", row.id, row.title);
-        });
+      // Construct SQL query
+      let query = 'SELECT TOP 50 * FROM Approvals';
+      const filterConditions = Object.entries(filters).map(([key, value]) => `${key} = '${value}'`);
+      if (filterConditions.length > 0) {
+        query += ' WHERE ' + filterConditions.join(' AND ');
+      }
+      if (sortField) {
+        query += ` ORDER BY ${sortField} ${sortOrder}`;
+      }
 
-        // close connection only when we're certain application is finished
-        poolConnection.close();
+      console.log("Executing query:", query);
+      const resultSet = await poolConnection.request().query(query);
+
+      console.log(`${resultSet.recordset.length} rows returned.`);
+
+      // Close connection only when we're certain application is finished
+      poolConnection.close();
 
       return {
         status: 200,
@@ -43,13 +55,11 @@ const functionConfig: { methods: HttpMethod[], authLevel: "function" | "anonymou
         jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' }
       };
     } finally {
-      if (poolConnection) await poolConnection.close();
+      if (poolConnection) {
+        poolConnection.close();
+      }
     }
   }
 };
 
-app.http("data", {
-  methods: functionConfig.methods,
-  authLevel: functionConfig.authLevel,
-  handler: functionConfig.handler,
-});
+app.http('getApprovals', functionConfig);

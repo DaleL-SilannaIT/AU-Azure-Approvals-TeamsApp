@@ -1,6 +1,8 @@
 import { useContext, useState } from "react";
 import { TeamsFxContext } from "../common/Context";
-import { MyApprovalsTable } from "./components/table/Table";
+import { MyApprovalsTable } from "./components/table/MyApprovalsTable";
+import { MyApprovalsFilters } from "./components/filters/MyApprovalsFilters";
+import "./MyApprovals.css";
 
 export default function MyApprovals() {
   const { themeString } = useContext(TeamsFxContext);
@@ -20,6 +22,9 @@ export default function MyApprovals() {
             : "contrast"
       }
     >
+      <div className="my-approvals-filters-container">
+        <MyApprovalsFilters />
+      </div>
       <MyApprovalsTable />
     </div>
   );

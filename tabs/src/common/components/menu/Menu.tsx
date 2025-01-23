@@ -7,13 +7,6 @@ import { IconButton } from '@fluentui/react/lib/Button';
 initializeIcons();
 
 const navStyles: Partial<INavStyles> = {
-  root: {
-    width: 208,
-    height: 350,
-    boxSizing: 'border-box',
-    border: '1px solid #eee',
-    overflowY: 'auto',
-  },
   // these link styles override the default truncation behavior
   link: {
     whiteSpace: 'normal',
@@ -96,10 +89,10 @@ export const Menu: React.FunctionComponent<MenuProps> = ({ isCollapsed, toggleCo
           ...navStyles,
           root: {
             height: 350,
-            boxSizing: 'border-box',
+            //boxSizing: 'border-box',
             border: '1px solid #eee',
             overflowY: 'auto',
-            width: isCollapsed ? 48 : 208,
+            width: isCollapsed ? 48 : 150,
             transition: 'width 0.3s',
           },
         }}

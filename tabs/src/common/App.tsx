@@ -21,11 +21,29 @@ export default function App() {
   });
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
+  const [userToken, setUserToken] = useState<string>();
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
 
+  const initialiseUserToken = async () => {
+    try {
+      const token = await teamsUserCredential?.getToken(["User.Read"]);
+      setUserToken(token?.token); // Store token in state
+
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+    }
+  }
+
+  initialiseUserToken()
   return (
     <TeamsFxContext.Provider value={{ theme, themeString, teamsUserCredential }}>
       <FluentProvider

@@ -6,6 +6,20 @@
         "isEnabled": true,
         "excludedTypes": "Request"
       }
+    },
+    "logLevel": {
+      "default": "Information",
+      "Function": "Information",
+      "Host.Results": "Information",
+      "Host.Aggregator": "Information",
+      "Host.Executor": "Information",
+      "Host.Startup": "Information",
+      "Host.General": "Information",
+      "Host.Triggers": "Information",
+      "Host.Bindings": "Information",
+      "Host.Function": "Information",
+      "Host.Function.Console": "Information",
+      "Host.Function.Console.Log": "Information"
     }
   },
   "extensionBundle": {

@@ -4,3 +4,10 @@
     overflow-x: auto;
     flex-grow: 1;
   }
+
+  .my-approvals-filters-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: end;
+    padding-bottom: 10px;
+  }

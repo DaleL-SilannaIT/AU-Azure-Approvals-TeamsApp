@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FluentProvider, teamsLightTheme, teamsDarkTheme, teamsHighContrastTheme, Spinner, tokens } from "@fluentui/react-components";
 import { HashRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import { useTeamsUserCredential } from "@microsoft/teamsfx-react";
@@ -6,7 +6,7 @@ import Privacy from "./Privacy";
 import TermsOfUse from "./TermsOfUse";
 import TabConfig from "./TabConfig";
 import NewApproval from "../new_approval/NewApproval";
-import MyApprovals from "../my_approvals/MyApprovals";
+import {MyApprovals} from "../my_approvals/MyApprovals";
 import PastApprovals from "../past_approvals/PastApprovals";
 import Admin from "../admin/Admin";
 import { TeamsFxContext } from "./Context";
@@ -31,21 +31,39 @@ export default function App() {
 
   const initialiseUserToken = async () => {
     try {
-      const token = await teamsUserCredential?.getToken(["User.Read"]);
-      setUserToken(token?.token); // Store token in state
-
+      if (!teamsUserCredential) {
+        console.log("No teams user credential");
+        return;
+      }
+  
+      const token = await teamsUserCredential.getToken(["User.Read"]);
+      if (token) {
+        console.log('Token retrieved successfully');
+        setUserToken(token.token);
+      } else {
+        console.log('No token returned');
+      }
     } catch (err) {
+      console.error('Error getting token:', err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('An unknown error occurred');
       }
     }
-  }
+  };
+  
+  useEffect(() => {
+    if (teamsUserCredential) {
+      initialiseUserToken();
+    }
+  }, [teamsUserCredential]);
 
-  initialiseUserToken()
+  useEffect(() => {
+    initialiseUserToken();
+  }, [teamsUserCredential]);
   return (
-    <TeamsFxContext.Provider value={{ theme, themeString, teamsUserCredential }}>
+    <TeamsFxContext.Provider value={{ theme, themeString, teamsUserCredential, userToken }}>
       <FluentProvider
         theme={
           themeString === "dark"

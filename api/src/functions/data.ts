@@ -28,10 +28,10 @@ export async function data(
     };
   }
 
-  const claims = verifyJWT(token);
+  const claims = await verifyJWT(token);
   console.log('Decoded token:', claims); // Debugging log
 
-  const secGrps = await getSecGrps(claims?.upn);
+  const secGrps = [] //await getSecGrps(claims?.upn);
   console.log('User security groups:', secGrps); // Debugging log
 
   let poolConnection: sql.ConnectionPool | null = null;
@@ -53,9 +53,10 @@ export async function data(
     let approvalUserFilters = [];
 
     try {
-      approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
-      approvalGroupFilters = JSON.parse(params.get('approvalGroupFilters') as string) as ApprovalGroupFilters[];
-      approvalUserFilters = JSON.parse(params.get('approvalUserFilters') as string) as ApprovalUserFilters[];
+      console.log('approvalRecordFilters:', params.get('approvalRecordFilters'));
+      //approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
+      //approvalGroupFilters = JSON.parse(params.get('approvalGroupFilters') as string) as ApprovalGroupFilters[];
+      //approvalUserFilters = JSON.parse(params.get('approvalUserFilters') as string) as ApprovalUserFilters[];
       context.log("Parsed filters:", { approvalRecordFilters, approvalGroupFilters, approvalUserFilters });
     } catch (err) {
       console.error("Invalid filter data:", err);
@@ -67,12 +68,12 @@ export async function data(
 
     const approvalFilters: ApprovalFilters = { approvalRecordFilters, approvalGroupFilters, approvalUserFilters, topCount, sortField, sortOrder, skipCount };
     let query = `SELECT TOP 50 * FROM Approvals`;
-    context.log("Initial query:", query);
-    query = await FilterQueryBuilder(approvalFilters,'',[]);
-    context.log("Constructed query:", query);
+    console.log("Initial query:", query);
+    query = await FilterQueryBuilder(approvalFilters,claims.payload.upn,secGrps);
+    console.log("Constructed query:", query);
 
     const resultSet = await poolConnection.request().query(query);
-    context.log(`${resultSet.recordset.length} rows returned.`);
+    console.log(`${resultSet.recordset.length} rows returned.`);
 
     // Close connection only when we're certain application is finished
     poolConnection.close();
@@ -81,7 +82,7 @@ export async function data(
     return {
       status: 200,
       //jsonBody: resultSet.recordset
-      jsonBody: query
+      jsonBody: resultSet.recordset
     };
   } catch (err) {
     console.error('Function error:', err);

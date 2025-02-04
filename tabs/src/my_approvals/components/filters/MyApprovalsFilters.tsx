@@ -6,25 +6,33 @@ import { Toggle } from '@fluentui/react/lib/Toggle';
 import { defaultDatePickerStrings, mergeStyleSets, DatePicker as FluentDatePicker, SpinButton, ISpinButtonStyles, Position, DefaultButton } from '@fluentui/react';
 import { onFormatDate, onParseDateFromString } from './controls/DatePicker';
 import { useState } from 'react';
+import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../../../../../api/src/database/interfaces/filters';
+import { ApprovalRecord } from '../../../../../api/src/database/interfaces/approvalRecord';
+import { ApprovalGroup } from '../../../../../api/src/database/interfaces/approvalGroup';
+import { ApprovalUser } from '../../../../../api/src/database/interfaces/approvalUser';
 
 interface MyApprovalsFiltersProps {
-  onApplyFilters: (filters: any) => void;
+  filters: ApprovalFilters;
+  onApplyFilters: (filters: ApprovalFilters) => void;
 }
 
-export const MyApprovalsFilters: React.FunctionComponent<MyApprovalsFiltersProps> = ({ onApplyFilters }) => {
+export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({ filters, onApplyFilters }) => {
   const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
-  const [filters, setFilters] = useState({
-    id: 0,
-    fromDate: undefined as Date | undefined,
-    toDate: undefined as Date | undefined,
-    active: true,
-  });
 
   const IdStyles: Partial<ISpinButtonStyles> = { spinButtonWrapper: { width: 75 } };
 
   const onApply = () => {
     onApplyFilters(filters);
     dismissPanel();
+  };
+
+  const addApprovalRecordFilter = (columnName: keyof ApprovalRecord, value: string, operator: '=' | '!=' | '>' | '<' | '>=' | '<=', valueType: 'number' | 'string' | 'boolean' | 'datetime') => {
+    const newFilter: ApprovalRecordFilters = {
+      columnName,
+      operator,
+      value,
+      value_type: valueType
+    };
   };
 
   const styles = mergeStyleSets({
@@ -52,14 +60,18 @@ export const MyApprovalsFilters: React.FunctionComponent<MyApprovalsFiltersProps
             <SpinButton
               label="Id"
               labelPosition={Position.top}
-              defaultValue="0"
+              defaultValue=""
               min={0}
               max={100}
               step={1}
               incrementButtonAriaLabel="Increase value by 1"
               decrementButtonAriaLabel="Decrease value by 1"
               styles={IdStyles}
-              onChange={(e, newValue) => setFilters({ ...filters, id: newValue ? parseInt(newValue, 10) : 0 })}
+              onChange={(e, newValue) => {
+                if (newValue) {
+                  addApprovalRecordFilter('id', newValue, '=', 'number');
+                }
+              }}
             />
           </div>
           <div>
@@ -68,8 +80,17 @@ export const MyApprovalsFilters: React.FunctionComponent<MyApprovalsFiltersProps
                 label="From"
                 allowTextInput
                 ariaLabel="Select a date. Input format is day slash month slash year."
-                value={filters.fromDate || undefined}
-                onSelectDate={(fromDate) => setFilters({ ...filters, fromDate: fromDate || undefined })}
+                //value={localFilters.fromDate || undefined}
+                onSelectDate={(fromDate) => {
+                  if (fromDate) {
+                    addApprovalRecordFilter(
+                      'created_datetime',
+                      fromDate.toISOString(),
+                      '>=',
+                      'datetime'
+                    );
+                  }
+                }}
                 formatDate={onFormatDate}
                 parseDateFromString={onParseDateFromString}
                 className={styles.control}
@@ -79,8 +100,17 @@ export const MyApprovalsFilters: React.FunctionComponent<MyApprovalsFiltersProps
                 label="To"
                 allowTextInput
                 ariaLabel="Select a date. Input format is day slash month slash year."
-                value={filters.toDate || undefined}
-                onSelectDate={(toDate) => setFilters({ ...filters, toDate: toDate || undefined })}
+                //value={localFilters.toDate || undefined}
+                onSelectDate={(toDate) => {
+                  if (toDate) {
+                    addApprovalRecordFilter(
+                      'created_datetime',
+                      toDate.toISOString(),
+                      '<=',
+                      'datetime'
+                    );
+                  }
+                }}
                 formatDate={onFormatDate}
                 parseDateFromString={onParseDateFromString}
                 className={styles.control}
@@ -93,7 +123,16 @@ export const MyApprovalsFilters: React.FunctionComponent<MyApprovalsFiltersProps
                 defaultChecked
                 onText="Yes"
                 offText="No"
-                onChange={(ev, checked = false) => setFilters({ ...filters, active: checked })}
+                onChange={(ev, checked = false) => {
+                  if (checked !== undefined) {
+                    addApprovalRecordFilter(
+                      'active',
+                      checked.toString(),
+                      '=',
+                      'boolean'
+                    );
+                  }
+                }}
               />
             </div>
           </div>

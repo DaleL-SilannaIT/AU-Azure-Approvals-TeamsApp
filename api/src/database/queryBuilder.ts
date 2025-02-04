@@ -5,81 +5,8 @@ export async function FilterQueryBuilder(filters: ApprovalFilters, userUPN: stri
     const filterQuery = FilterHandler(userQuery, filters);
     const innerJoinQuery = InnerJoinHandler(filterQuery);
 
-    // Initialise SQL query with TOP count
-    let query = `SELECT * FROM (
-    SELECT * 
-    FROM Approvals`
-    
-    let whereClauses: string[] = [];
-
-    if (Array.isArray(filters.approvalRecordFilters) && filters.approvalRecordFilters.length > 0) {
-
-        // Loop through approval record filters and append all filter values that are not undefined
-        for (const filter of filters.approvalRecordFilters) {
-            let filterValue = CastValue(filter.value, filter.value_type);
-            if (filterValue === undefined) {
-                continue;
-            }
-            whereClauses.push(`${filter.columnName} ${filter.operator} ${filterValue}`);
-        }
-
-        // If there are any filters, append them to the query
-        if (whereClauses.length > 0) {
-            query += ' WHERE ' + whereClauses.join(' AND ');
-        }
-    }
-
-    query += ` ORDER BY id
-    OFFSET ${filters.skipCount} 
-    ROWS FETCH NEXT ${filters.topCount} ROWS ONLY
-    ) AS TopApprovals`;
-
-    // Perform a join on the ApprovalGroup table
-    query += ' INNER JOIN Approval_Groups ON TopApprovals.id = Approval_Groups.approval_id';
-    // Reset whereClauses array
-    whereClauses = [];
-
-    if (Array.isArray(filters.approvalGroupFilters) && filters.approvalGroupFilters.length > 0) {
-        // Loop through approval group filters and append all filter values that are not undefined
-        for (const filter of filters.approvalGroupFilters) {
-            let filterValue = CastValue(filter.value, filter.value_type);
-            if (filterValue === undefined) {
-                continue;
-            }
-            whereClauses.push(`${filter.columnName} ${filter.operator} ${filterValue}`);
-        }
-
-        // If there are any filters, append them to the query
-        if (whereClauses.length > 0) {
-            query += ' WHERE ' + whereClauses.join(' AND ');
-        }
-    }
-    // Perform a join on the ApprovalUser table
-    query += ' INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id';
-    // Reset whereClauses array
-    whereClauses = [];
-
-    if (Array.isArray(filters.approvalUserFilters) && filters.approvalUserFilters.length > 0) {
-        // Loop through approval user filters and append all filter values that are not undefined
-        for (const filter of filters.approvalUserFilters) {
-            let filterValue = CastValue(filter.value, filter.value_type);
-            if (filterValue === undefined) {
-                continue;
-            }
-            whereClauses.push(`${filter.columnName} ${filter.operator} ${filterValue}`);
-        }
-
-        // If there are any filters, append them to the query
-        if (whereClauses.length > 0) {
-            query += ' WHERE ' + whereClauses.join(' AND ');
-        }
-    }
-
-    if (filters.sortField) {
-        query += ` ORDER BY ${filters.sortField} ${filters.sortOrder}`;
-    }
-    console.log('Constructed query inside FilterQueryBuilder:', query);
-    return query;
+    console.log('Constructed query inside FilterQueryBuilder:', innerJoinQuery);
+    return innerJoinQuery;
 }
 
 function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 'datetime'): any {
@@ -102,7 +29,6 @@ function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 
             return undefined;
     }
 }
-
 
 function UserScopeHandler(userUPN: string, userSecGrps: string[]): string {
     //const groups = await fetchUserSecurityGroups(userUPN);

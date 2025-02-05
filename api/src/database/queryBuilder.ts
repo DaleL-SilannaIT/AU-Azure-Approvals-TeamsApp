@@ -5,7 +5,8 @@ export async function FilterQueryBuilder(filters: ApprovalFilters, userUPN: stri
     const filterQuery = FilterHandler(userQuery, filters);
     const innerJoinQuery = InnerJoinHandler(filterQuery);
 
-    console.log('Constructed query inside FilterQueryBuilder:', innerJoinQuery);
+    console.log('Filters in query builder:', filters);
+    //console.log('Constructed query inside FilterQueryBuilder:', innerJoinQuery);
     return innerJoinQuery;
 }
 
@@ -14,18 +15,23 @@ function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 
     // Return undefined if the value cannot be cast
     switch (value_type) {
         case 'number':
+            console.log(11);
             return parseInt(value) === 1 ? parseInt(value) : undefined;
         case 'boolean':
+            console.log(22);
             return value.toLowerCase() === 'true' ? 1 : 0;
         case 'datetime':
+            console.log(33);
             // Perform checks to make sure the filter.value is in valid SQL format
             if (!/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/.test(value)) {
                 return undefined
             }
-            return `'${value}'`;
+            return `'${value.split('.')[0]}'`;
         case 'string':
+            console.log(44);
             return value;
         default:
+            console.log(55);
             return undefined;
     }
 }
@@ -68,30 +74,41 @@ function UserScopeHandler(userUPN: string, userSecGrps: string[]): string {
 }
 
 function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
-    let tableName = 'UserApprovals';
+    let tableName = 'Approvals';
     let filterQuery = 
     `SELECT * FROM (${userQuery}) AS ${tableName}`
-
+    console.log('recieved filters:', filters);
     //parese filters here and append them to query string
     let whereClauses: string[] = [];
-
+    console.log(1)
     //Loop through all keys in the filter object that are of type array and concatenate the filters the filter objects inside each array to form the filter query
     Object.keys(filters).forEach(key => {
+        console.log(2)
         // filters out non array keys (e.g. sortField, sortOrder, topCount, skipCount)
         if (Array.isArray(filters[key])) {
+            console.log(3)
             // Loop through each filter object and append the filter to the query
             for (const filter of filters[key]) {
+                console.log(4, filter)
                 let filterValue = CastValue(filter.value, filter.value_type);
+                if (filter.value_type === 'datetime') {
+                    filterValue = `'${filter.value.split('.')[0]}'`;
+                } else {
+                    filterValue = filter.value;
+                }
                 // if the filter is invalid, skip it and move to the next one
-                if (filterValue === undefined) {
+                if (filter.value === undefined) {
+                    console.log(5)
                     continue;
                 }
                 //append the fitler to the where clause array
-                whereClauses.push(`${tableName}.${filter.columnName} ${filter.operator} ${filterValue}`);
+                whereClauses.push(`${tableName}_${filter.columnName} ${filter.operator} ${filterValue}`);
+                console.log('Adding filter:', `${tableName}.${filter.columnName} ${filter.operator} ${filterValue}`);
             }
     
             // If there are any filters, append them to the query
             if (whereClauses.length > 0) {
+                console.log(6)
                 filterQuery += ' WHERE ' + whereClauses.join(' AND ');
             }
 

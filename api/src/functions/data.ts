@@ -43,21 +43,37 @@ export async function data(
 
     // Parse form-data parameters
     const params = await req.formData();
-    context.log("Form data parameters:", params);
+    console.log("Form data parameters:", params);
     const sortField = params.get('sortField') as keyof ApprovalRecord | undefined;
     const sortOrder = params.get('sortOrder') === 'desc' ? 'DESC' : 'ASC';
-    const topCount = params.get('topCount') ? parseInt(params.get('topCount') as string) : 2;
+    const topCount = params.get('topCount') ? parseInt(params.get('topCount') as string) : 50;
     const skipCount = params.get('skipCount') ? parseInt(params.get('skipCount') as string) : 0;
     let approvalRecordFilters = [];
     let approvalGroupFilters = [];
     let approvalUserFilters = [];
 
+    // try {
+    //   let temp = JSON.parse(params.get('approvalRecordFilters') as string);
+    //   temp.forEach((element: any) => {
+    //     console.log('element:', element);
+    //   });
+    //   //console.log('approvalRecordFilters:', JSON.parse(params.get('approvalRecordFilters') as string));
+    //   approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
+    // } catch (err) {
+    //   console.error("Invalid record filter data:", err);
+    // }
+
     try {
       console.log('approvalRecordFilters:', params.get('approvalRecordFilters'));
+      let temp = JSON.parse(params.get('approvalRecordFilters') as string);
+      temp.forEach((element: any) => {
+        console.log('element:', element);
+      });
+      approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
       //approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
       //approvalGroupFilters = JSON.parse(params.get('approvalGroupFilters') as string) as ApprovalGroupFilters[];
       //approvalUserFilters = JSON.parse(params.get('approvalUserFilters') as string) as ApprovalUserFilters[];
-      context.log("Parsed filters:", { approvalRecordFilters, approvalGroupFilters, approvalUserFilters });
+      console.log("Parsed filters:", { approvalRecordFilters, approvalGroupFilters, approvalUserFilters });
     } catch (err) {
       console.error("Invalid filter data:", err);
       return {

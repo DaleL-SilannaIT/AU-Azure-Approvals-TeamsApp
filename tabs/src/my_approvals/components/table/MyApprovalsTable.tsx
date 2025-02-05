@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { IColumn, SelectionMode, ShimmeredDetailsList } from '@fluentui/react';
 import { ApprovalRecord } from '../../../../../api/src/database/interfaces/approvalRecord';
 import { ApprovalRecordSet } from '../../../../../api/src/database/interfaces/approvalRecordSet';
@@ -18,12 +18,13 @@ const columns: IColumn[] = [
     name: 'Icon', 
     fieldName: 'icon',  // Changed to match ApprovalRecord interface
     minWidth: 50, 
-    maxWidth: 50
+    maxWidth: 50,
+    isResizable: true,
     // onRender(item: ApprovalRecord) {
     //   return <img src={item.icon} alt="Approval Icon" style={{ width: '51px', height: '51px' }} />;
     // }
   },
-  { key: 'Approvals_id', name: 'Id', fieldName: 'id', minWidth: 50 },
+  { key: 'Approvals_id', name: 'Id', fieldName: 'id', minWidth: 50, isSorted: true, isSortedDescending: true, sortAscendingAriaLabel: 'Sorted Small to Large', sortDescendingAriaLabel: 'Sorted Large to Small' },
   { key: 'Approvals_title', name: 'Title', fieldName: 'title', minWidth: 100 },
   { key: 'Approvals_subject', name: 'Subject', fieldName: 'subject', minWidth: 100 },
   { key: 'Approvals_outcome', name: 'Outcome', fieldName: 'outcome', minWidth: 100 },
@@ -39,7 +40,6 @@ const onRenderItemColumn = (item?: ApprovalRecordSet, index?: number, column?: I
 
   // Special handling for icon column
   if (column.key === 'Approvals_icon') {
-    console.log('AVAILALBE ICON: ', item);
     return (
       <img 
         src={item.Approvals_icon} 
@@ -67,83 +67,97 @@ interface MyApprovalsTableProps {
 export const MyApprovalsTable: React.FunctionComponent<MyApprovalsTableProps> = ({ 
   filters, 
   setFilters, 
-  userToken  // Receive userToken from props
+  userToken 
 }) => {
   const [items, setItems] = useState<ApprovalRecordSet[] | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Remove useContext since we're getting userToken from props
-  // const { userToken } = useContext(TeamsFxContext);
-
-  useEffect(() => {
-    console.log('Component mounted/updated, userToken:', userToken);
-  }, [userToken]);
-
-  const fetchData = async (filters: any) => {
-    // console.log('fetchData called, current userToken:', userToken);
-    // console.log('userToken type:', typeof userToken);
-    // console.log('userToken value:', userToken || 'undefined');
-    // console.log('Fetching data with filters:', filters); // Debugging log
+  const fetchData = useCallback(async (filters: ApprovalFilters) => {
     if (!userToken) {
       console.log('No userToken available, aborting fetch');
       return;
     }
 
+    console.log('Starting fetch with filters:', filters); // Debug log
     setLoading(true);
+    
     try {
-      
       const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
-      const formData = new FormData();
-      Object.keys(filters).forEach(key => {
-        formData.append(key, filters[key]);
-       
+      let formData = new FormData();
+      
+      // Append non-array filters
+      (Object.keys(filters) as (keyof ApprovalFilters)[]).forEach(key => {
+        if (!Array.isArray(filters[key])) {
+          formData.append(key, filters[key] as string);
+          console.log(`Adding filter: ${key}=${filters[key]}`); // Debug log
+        }
       });
 
-      console.log('pre form data:', formData); // Debugging log
- 
-      let headers = new Headers();
-      headers.append('token', userToken ? userToken : '');
-      console.log('Sending request with token:', userToken);
+      // Append array filters as JSON strings
+      formData.append('approvalRecordFilters', JSON.stringify(filters.approvalRecordFilters));
+      formData.append('approvalGroupFilters', JSON.stringify(filters.approvalGroupFilters));
+      formData.append('approvalUserFilters', JSON.stringify(filters.approvalUserFilters));
 
+      console.log('record filters length', filters.approvalRecordFilters.length)
+      console.log('Stringified record filters', JSON.stringify(filters.approvalRecordFilters))
+      let headers = new Headers();
+      headers.append('token', userToken);
+
+      // Debug: Log formatted data
+      const formDataObj: Record<string, any> = {};
+      formData.forEach((value, key) => {
+        formDataObj[key] = value;
+      });
+      console.table(formDataObj);
+      
       const response = await fetch(`${endpoint}/api/data`, {
         method: 'POST',
         body: formData,
         headers: headers
       });
+
+      console.log('Response status:', response.status); // Debug log
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
       const data: ApprovalRecordSet[] = await response.json();
-      console.log('Fetched data:', data); // Debugging log
-      setItems(data);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+      console.log('Fetched data:', data); // Debug log
+      
+      if (!data || data.length === 0) {
+        console.log('No data returned'); // Debug log
+        setItems([]);
       } else {
-        setError('An unknown error occurred');
+        setItems(data);
       }
+
+    } catch (err) {
+      console.error('Fetch error:', err); // Debug log
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setItems([]); // Set empty array on error
     } finally {
+      console.log('Fetch complete, setting loading false'); // Debug log
       setLoading(false);
     }
-  };
+  }, [userToken]);
 
   useEffect(() => {
     if (userToken) {
+      console.log('Filters changed, fetching data:', filters); // Debug log
       fetchData(filters);
-    } else {
-      console.log('Waiting for userToken before fetching...');
     }
-  }, [filters, userToken]);
+  }, [filters, userToken, fetchData]);
 
   return (
     <div className='table-container'>
       <div className="my-approvals-filters-container">
-      <MyApprovalsFilters 
-        filters={filters}
-        onApplyFilters={setFilters}
-      />
-    </div>
+        <MyApprovalsFilters 
+          filters={filters}
+          onApplyFilters={setFilters}
+        />
+      </div>
       {error && <div className="error">{error}</div>}
       <ShimmeredDetailsList
         setKey="items"

@@ -1,11 +1,6 @@
-import * as React from 'react';
-import { IconButton } from '@fluentui/react/lib/Button';
-import { Panel } from '@fluentui/react/lib/Panel';
-import { useBoolean } from '@fluentui/react-hooks';
-import { Toggle } from '@fluentui/react/lib/Toggle';
-import { defaultDatePickerStrings, mergeStyleSets, DatePicker as FluentDatePicker, SpinButton, ISpinButtonStyles, Position, DefaultButton } from '@fluentui/react';
+import { defaultDatePickerStrings, mergeStyleSets, DatePicker as FluentDatePicker, SpinButton, ISpinButtonStyles, Position, DefaultButton, PrimaryButton, IconButton, Panel } from '@fluentui/react';
 import { onFormatDate, onParseDateFromString } from './controls/DatePicker';
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../../../../../api/src/database/interfaces/filters';
 import { ApprovalRecord } from '../../../../../api/src/database/interfaces/approvalRecord';
 import { ApprovalGroup } from '../../../../../api/src/database/interfaces/approvalGroup';
@@ -16,130 +11,109 @@ interface MyApprovalsFiltersProps {
   onApplyFilters: (filters: ApprovalFilters) => void;
 }
 
-export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({ filters, onApplyFilters }) => {
-  const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
+export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({ 
+  filters, 
+  onApplyFilters 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [idFilter, setIdFilter] = useState<string>('');
+  const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
+  const [toDate, setToDate] = useState<Date | undefined>(undefined);
 
-  const IdStyles: Partial<ISpinButtonStyles> = { spinButtonWrapper: { width: 75 } };
-
-  const onApply = () => {
-    onApplyFilters(filters);
-    dismissPanel();
-  };
-
-  const addApprovalRecordFilter = (columnName: keyof ApprovalRecord, value: string, operator: '=' | '!=' | '>' | '<' | '>=' | '<=', valueType: 'number' | 'string' | 'boolean' | 'datetime') => {
-    const newFilter: ApprovalRecordFilters = {
-      columnName,
-      operator,
-      value,
-      value_type: valueType
+  const updateFilters = useCallback((): ApprovalFilters => {
+    const newFilters: ApprovalFilters = {
+      sortField: 'id',
+      sortOrder: 'DESC',
+      topCount: 100,
+      skipCount: 0,
+      approvalRecordFilters: [],
+      approvalGroupFilters: [],
+      approvalUserFilters: []
     };
-  };
 
-  const styles = mergeStyleSets({
-      root: { selectors: { '> *': { marginBottom: 15 } } },
-      control: { maxWidth: 300, marginBottom: 15 },
-  });
+    // Add ID filter if present
+    if (idFilter) {
+      newFilters.approvalRecordFilters.push({
+        columnName: 'id',
+        operator: '=',
+        value: idFilter,
+        value_type: 'number'
+      });
+    }
+
+    // Add date range filters if present
+    if (fromDate) {
+      newFilters.approvalRecordFilters.push({
+        columnName: 'created_datetime',
+        operator: '>=',
+        value: fromDate.toISOString(),
+        value_type: 'datetime'
+      });
+    }
+
+    if (toDate) {
+      newFilters.approvalRecordFilters.push({
+        columnName: 'created_datetime',
+        operator: '<=',
+        value: toDate.toISOString(),
+        value_type: 'datetime'
+      });
+    }
+
+    return newFilters;
+  }, [idFilter, fromDate, toDate]);
+
+  const applyFilters = useCallback(() => {
+    const newFilters = updateFilters();
+    console.log('Applying filters:', newFilters); // Debug log
+    onApplyFilters(newFilters);
+    setIsOpen(false);
+  }, [updateFilters, onApplyFilters]);
+
+  const clearFilters = useCallback(() => {
+    setIdFilter('');
+    setFromDate(undefined);
+    setToDate(undefined);
+    onApplyFilters({
+      sortField: 'id',
+      sortOrder: 'DESC',
+      topCount: 100,
+      skipCount: 0,
+      approvalRecordFilters: [],
+      approvalGroupFilters: [],
+      approvalUserFilters: []
+    });
+  }, [onApplyFilters]);
 
   return (
     <div>
       <IconButton
         iconProps={{ iconName: 'Filter' }}
-        title="Open Filters"
-        ariaLabel="Open Filters"
-        onClick={openPanel}
+        onClick={() => setIsOpen(true)}
       />
-      <Panel
-        headerText="Filters"
-        isOpen={isOpen}
-        onDismiss={dismissPanel}
-        isLightDismiss
-        closeButtonAriaLabel="Close"
-      >
-        <form>
-          <div>
-            <SpinButton
-              label="Id"
-              labelPosition={Position.top}
-              defaultValue=""
-              min={0}
-              max={100}
-              step={1}
-              incrementButtonAriaLabel="Increase value by 1"
-              decrementButtonAriaLabel="Decrease value by 1"
-              styles={IdStyles}
-              onChange={(e, newValue) => {
-                if (newValue) {
-                  addApprovalRecordFilter('id', newValue, '=', 'number');
-                }
-              }}
-            />
-          </div>
-          <div>
-            <div>
-              <FluentDatePicker
-                label="From"
-                allowTextInput
-                ariaLabel="Select a date. Input format is day slash month slash year."
-                //value={localFilters.fromDate || undefined}
-                onSelectDate={(fromDate) => {
-                  if (fromDate) {
-                    addApprovalRecordFilter(
-                      'created_datetime',
-                      fromDate.toISOString(),
-                      '>=',
-                      'datetime'
-                    );
-                  }
-                }}
-                formatDate={onFormatDate}
-                parseDateFromString={onParseDateFromString}
-                className={styles.control}
-                strings={defaultDatePickerStrings}
-              />
-              <FluentDatePicker
-                label="To"
-                allowTextInput
-                ariaLabel="Select a date. Input format is day slash month slash year."
-                //value={localFilters.toDate || undefined}
-                onSelectDate={(toDate) => {
-                  if (toDate) {
-                    addApprovalRecordFilter(
-                      'created_datetime',
-                      toDate.toISOString(),
-                      '<=',
-                      'datetime'
-                    );
-                  }
-                }}
-                formatDate={onFormatDate}
-                parseDateFromString={onParseDateFromString}
-                className={styles.control}
-                strings={defaultDatePickerStrings}
-              />
-            </div>
-            <div>
-              <Toggle
-                label="Active"
-                defaultChecked
-                onText="Yes"
-                offText="No"
-                onChange={(ev, checked = false) => {
-                  if (checked !== undefined) {
-                    addApprovalRecordFilter(
-                      'active',
-                      checked.toString(),
-                      '=',
-                      'boolean'
-                    );
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <div>
-            <DefaultButton text="Apply" onClick={onApply} />
-          </div>
-        </form>
+      <Panel isOpen={isOpen} onDismiss={() => setIsOpen(false)} isLightDismiss={true}>
+        <SpinButton
+          label="Id"
+          labelPosition={Position.top}
+          value={idFilter}
+          onChange={(e, newValue) => setIdFilter(newValue || '')}
+        />
+        <FluentDatePicker
+          label="From"
+          value={fromDate}
+          onSelectDate={(date) => setFromDate(date || undefined)}
+        />
+        <FluentDatePicker
+          label="To"
+          value={toDate}
+          onSelectDate={(date) => setToDate(date || undefined)}
+        />
+        <DefaultButton onClick={clearFilters} >
+          Clear
+        </DefaultButton>
+        <PrimaryButton onClick={applyFilters} style={{ marginLeft: '8px' }}>
+          Apply
+        </PrimaryButton>
       </Panel>
     </div>
   );

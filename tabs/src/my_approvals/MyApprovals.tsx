@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { TeamsFxContext } from '../common/Context';
 import { MyApprovalsTable } from './components/table/MyApprovalsTable';
 import { ApprovalFilters } from '../../../api/src/database/interfaces/filters';
@@ -15,6 +15,10 @@ export const MyApprovals: React.FC = () => {
     approvalGroupFilters: [],
     approvalUserFilters: []
   });
+
+  useEffect(() => {
+    console.log('Filters updated in MyApprovals:', filters); // Debug log
+  }, [filters]);
 
   return (
     <div className="my-approvals">

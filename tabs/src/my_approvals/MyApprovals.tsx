@@ -1,5 +1,6 @@
 import { useState, useContext, useEffect } from 'react';
 import { TeamsFxContext } from '../common/Context';
+//import { MyApprovalsTable } from './components/table/MyApprovalsTable';
 import { MyApprovalsTable } from './components/table/MyApprovalsTable';
 import { ApprovalFilters } from '../../../api/src/database/interfaces/filters';
 
@@ -21,12 +22,18 @@ export const MyApprovals: React.FC = () => {
   }, [filters]);
 
   return (
-    <div className="my-approvals">
-      <MyApprovalsTable 
-        filters={filters}
-        setFilters={setFilters}
-        userToken={userToken}
-      />
-    </div>
+    // <div className="my-approvals">
+    //   <MyApprovalsTable 
+    //     filters={filters}
+    //     setFilters={setFilters}
+    //     userToken={userToken}
+    //   />
+    // </div>
+
+    <MyApprovalsTable
+      filters={filters}
+      setFilters={setFilters}
+      userToken={userToken}
+    />
   );
 };

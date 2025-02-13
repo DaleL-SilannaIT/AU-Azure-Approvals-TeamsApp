@@ -20,6 +20,8 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
 
+  
+
   const updateFilters = useCallback((): ApprovalFilters => {
     const newFilters: ApprovalFilters = {
       sortField: 'id',

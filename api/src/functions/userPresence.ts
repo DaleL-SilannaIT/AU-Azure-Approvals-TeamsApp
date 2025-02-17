@@ -7,93 +7,87 @@ import { AppCredential, AppCredentialAuthConfig } from "@microsoft/teamsfx";
 import config from "../config";
 
 const authConfig: AppCredentialAuthConfig = {
-  authorityHost: config.authorityHost,
-  clientId: config.clientId,
-  tenantId: config.tenantId,
-  clientSecret: config.clientSecret,
+    authorityHost: config.authorityHost,
+    clientId: config.clientId,
+    tenantId: config.tenantId,
+    clientSecret: config.clientSecret,
 };
 
 /**
  * @param {HttpRequest} req - The HTTP request.
  * @param {InvocationContext} context - The Azure Functions context object.
  */
-export async function userPresence(
-  req: HttpRequest,
-  context: InvocationContext
+export async function presence(
+    req: HttpRequest,
+    context: InvocationContext
 ): Promise<HttpResponseInit> {
-  context.log("HTTP trigger function processed a request.");
+    context.log("HTTP trigger function processed a request.");
+    interface PresenceRequest {ids?: string[]}
+    try {
+        // Parse the request body
+        const requestBody: PresenceRequest = await req.json();
+        context.log('Request body:', requestBody);
 
-  const EntraId = req.query.get("EntraId");
+        if (!requestBody.ids || !Array.isArray(requestBody.ids) || requestBody.ids.length === 0) {
+            return {
+                status: 400,
+                jsonBody: {
+                    error: "Request body must contain an 'ids' array with user object IDs"
+                }
+            };
+        }
 
-  if (!EntraId) {
-    return {
-      status: 400,
-      jsonBody: {
-        error: "Missing 'EntraId' query parameter.",
-      },
-    };
-  }
+        let appCredential;
+        try {
+            appCredential = new AppCredential(authConfig);
+        } catch (e) {
+            context.error(e);
+            return {
+                status: 500,
+                jsonBody: {
+                    error:
+                        "Failed to construct TeamsFx with Application Identity. " +
+                        "Ensure your function app is configured with the right Azure AD App registration.",
+                },
+            };
+        }
 
-  let appCredential;
-  try {
-    appCredential = new AppCredential(authConfig);
-  } catch (e) {
-    context.error(e);
-    return {
-      status: 500,
-      jsonBody: {
-        error:
-          "Failed to construct TeamsFx with Application Identity. " +
-          "Ensure your function app is configured with the right Azure AD App registration.",
-      },
-    };
-  }
+        // Create connection
+        const authProvider = new TokenCredentialAuthenticationProvider(
+            appCredential,
+            {
+                scopes: ["https://graph.microsoft.com/.default"],
+            }
+        );
+        const graphClient: Client = Client.initWithMiddleware({
+            authProvider: authProvider,
+        });
 
-  // Create connection
-  try {
-    // Create an instance of the TokenCredentialAuthenticationProvider by passing the tokenCredential instance and options to the constructor
-    const authProvider = new TokenCredentialAuthenticationProvider(
-      appCredential,
-      {
-        scopes: ["https://graph.microsoft.com/.default"],
-      }
-    );
-    const graphClient: Client = Client.initWithMiddleware({
-      authProvider: authProvider,
-    });
-    
+        // Call Graph API with the correct request body structure
+        const presenceResponse = await graphClient.api('/communications/getPresencesByUserId').post(requestBody);
 
-    // Fetch the user's photo
-    const presenceResponse = await graphClient.api(`/communications/getPresencesByUserId`).post({body: [EntraId]});
-
-    // Return the photo as a binary stream
-    return {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json", // Adjust the content type based on the image format
-      },
-      body: presenceResponse,
-    };
-  } catch (e) {
-    context.error(e);
-    let error =
-      "Failed to create a connection for Graph connector: " + e.toString();
-    if (e?.statusCode === 401) {
-      error +=
-        " -- Please make sure you have done 'Admin Consent' with 'ExternalConnection.ReadWrite.OwnedBy' and 'ExternalItem.ReadWrite.All' application permissions for your AAD App";
+        context.log('User presence response:', presenceResponse);
+        return {
+            status: 200,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            jsonBody: presenceResponse
+        };
+    } catch (e) {
+        context.error(e);
+        return {
+            status: e?.statusCode ?? 500,
+            jsonBody: {
+                error: `Failed to fetch presence: ${e.toString()}`,
+                details: e
+            }
+        };
     }
-    return {
-      status: e?.statusCode ?? 500,
-      jsonBody: {
-        error,
-        details: e,
-      },
-    };
-  }
 }
 
-app.http("userPresence", {
-  methods: ["POST"],
-  authLevel: "anonymous",
-  handler: userPresence,
+app.http("presence", {
+    methods: ["POST"],
+    authLevel: "anonymous",
+    handler: presence,
 });

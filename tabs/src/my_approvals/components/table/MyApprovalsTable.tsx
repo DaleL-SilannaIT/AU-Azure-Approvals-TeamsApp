@@ -12,49 +12,6 @@ import { ShimmeredDetailsList } from '@fluentui/react';
 import { Facepile, OverflowButtonType, IFacepilePersona } from '@fluentui/react/lib/Facepile';
 import { PersonaPresence, PersonaSize } from '@fluentui/react/lib/Persona';
 
-const classNames = mergeStyleSets({
-  fileIconHeaderIcon: {
-    padding: 0,
-    fontSize: '16px'
-  },
-  fileIconCell: {
-    textAlign: 'center',
-    selectors: {
-      '&:before': {
-        content: '.',
-        display: 'inline-block',
-        verticalAlign: 'middle',
-        height: '100%',
-        width: '0px',
-        visibility: 'hidden'
-      }
-    }
-  },
-  fileIconImg: {
-    verticalAlign: 'middle',
-    maxHeight: '16px',
-    maxWidth: '16px'
-  },
-  controlWrapper: {
-    display: 'flex',
-    flexWrap: 'wrap'
-  },
-  exampleToggle: {
-    display: 'inline-block',
-    marginBottom: '10px',
-    marginRight: '30px'
-  },
-  selectionDetails: {
-    marginBottom: '20px'
-  }
-});
-const controlStyles = {
-  root: {
-    margin: '0 30px 20px 0',
-    maxWidth: '300px'
-  }
-};
-
 export interface IMyApprovalTableState {
   columns: IColumn[];
   items: IApproval[];
@@ -64,6 +21,7 @@ export interface IMyApprovalTableState {
   loading: boolean;
   error: string | null;
   photos: { [upn: string]: string | undefined }; // Add this line
+  presence: { [objectId: string]: PersonaPresence };
 }
 
 export interface IApproval {
@@ -90,6 +48,7 @@ export interface IUser {
   Approval_Users_email: string;
   Approval_Users_display_name: string;
   Approval_Users_notes: string[];
+  Approval_Users_object_id: string;
 }
 
 interface IMyApprovalsTableProps {
@@ -105,10 +64,9 @@ interface IUserPresence {
   activity: string;
 }
 
-interface IUserProfileData {
-  entraId: string;
-  photoUrl?: string;
-  presence?: PersonaPresence;
+interface IDecodedToken {
+  oid: string; // Object ID claim from Azure AD
+  // ... other claims
 }
 
 export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IMyApprovalTableState> {
@@ -176,22 +134,11 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
               text: persona.personaName,
               secondaryText: persona.data.upn as string,
               size: PersonaSize.size32,
-              presence: persona.data.presence,
+              presence: this.state.presence[persona.data.objectId as string] || PersonaPresence.offline,
               imageShouldFadeIn: true,
-              imageUrl: this.state.photos[persona.data.upn as string], // Use photo from state
-              onRenderInitials: () => {
-                this.fetchUserPhoto(persona.data.upn).then(photoUrl => {
-                  if (photoUrl) {
-                    this.setState(prevState => ({
-                      photos: {
-                        ...prevState.photos,
-                        [persona.data.upn as string]: photoUrl
-                      }
-                    }));
-                  }
-                });
-                return null;
-              }
+              imageUrl: this.state.photos[persona.data.upn as string],
+              initialsColor: persona.initialsColor,
+              imageInitials: persona.personaName ? persona.personaName.split(' ').map((name: string) => name[0]).join('') : '',
             })}
           />
         )
@@ -214,7 +161,8 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       isCompactMode: false,
       loading: false,
       error: null,
-      photos: {} // Add this line
+      photos: {}, // Add this line
+      presence: {}
     };
   }
 
@@ -232,10 +180,26 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       console.log('Access token updated:', this.props.accessToken ? 'present' : 'undefined');
     }
 
-    // Check if items have changed and update user profiles
-    if (prevState.items !== this.state.items && this.props.accessToken) {
+    // Check if items have changed
+    if (prevState.items !== this.state.items) {
+      // Get all unique object IDs from the new items
+      const objectIds = new Set<string>();
       this.state.items.forEach(item => {
-        this.updateUserProfiles(item);
+        item.approval_members.forEach(member => {
+          if (member.data.objectId) {
+            objectIds.add(member.data.objectId as string);
+          }
+        });
+      });
+
+      // Fetch presence for all users
+      if (objectIds.size > 0) {
+        this.fetchUserPresence(Array.from(objectIds));
+      }
+
+      // Fetch photos for each approval separately
+      this.state.items.forEach(approval => {
+        this.fetchPhotosForApproval(approval);
       });
     }
   }
@@ -302,7 +266,24 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         console.log('No data returned'); // Debug log
         this.setState({ items: [] });
       } else {
-        this.setState({ items: formattedData });
+        this.setState({ items: formattedData }, () => {
+          // After state is updated, fetch presence for all users
+          const objectIds = new Set<string>();
+          formattedData.forEach(item => {
+            item.approval_members.forEach(member => {
+              if (member.data.objectId) {
+                objectIds.add(member.data.objectId as string);
+              }
+            });
+          });
+
+          console.log('Object IDs:', objectIds); // Debug log
+  
+          if (objectIds.size > 0) {
+            console.log('Fetching presence for users:', Array.from(objectIds));
+            this.fetchUserPresence(Array.from(objectIds));
+          }
+        });
       }
 
     } catch (err) {
@@ -316,7 +297,9 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
 
   restructureData = (data: any[]): IApproval[] => {
     const approvalsMap: { [key: string]: IApproval } = {};
-
+    // Decode the token once
+    const decodedToken = this.props.userToken ? jwtDecode<IDecodedToken>(this.props.userToken) : null;
+  
     data.forEach(record => {
       if (!approvalsMap[record.Approvals_id]) {
         approvalsMap[record.Approvals_id] = {
@@ -331,9 +314,9 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
           approval_members: []
         };
       }
-
+  
       const approval = approvalsMap[record.Approvals_id];
-
+  
       let group = approval.groups.find(g => g.Approval_Groups_id === record.Approval_Groups_id);
       if (!group) {
         group = {
@@ -343,30 +326,43 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         };
         approval.groups.push(group);
       }
-
+  
       const user = {
         Approval_Users_id: record.Approval_Users_id,
         Approval_Users_upn: record.Approval_Users_upn,
         Approval_Users_email: record.Approval_Users_email,
         Approval_Users_display_name: record.Approval_Users_display_name,
-        Approval_Users_notes: JSON.parse(record.Approval_Users_notes)
+        Approval_Users_notes: JSON.parse(record.Approval_Users_notes),
+        Approval_Users_object_id: record.Approval_Users_object_id
       };
-
+  
       group.users.push(user);
-
+  
       // Add user to approval_members if not already present
       if (!approval.approval_members.some(member => member.id === user.Approval_Users_id)) {
         approval.approval_members.push({
           personaName: user.Approval_Users_display_name,
           imageUrl: '', // Add appropriate image URL if available
           imageInitials: user.Approval_Users_display_name.split(' ').map((name: string) => name[0]).join(''),
-          data: {upn: user.Approval_Users_upn, presence: PersonaPresence.online}
+          data: {
+            upn: user.Approval_Users_upn,
+            presence: PersonaPresence.offline,
+            objectId: user.Approval_Users_object_id // Add the object ID from the token
+          }
         });
       }
     });
+      
+    const approvals = Object.values(approvalsMap);
     
-    return Object.values(approvalsMap);
+    // Now update both photos and presence
+    approvals.forEach(approval => {
+      this.updateUserProfiles(approval);
+    });
+    
+    return approvals;
   };
+  
 
   private onRenderItemColumn = (item?: IApproval, index?: number, column?: IColumn): React.ReactNode => {
     if (!item || !column?.key) {
@@ -395,7 +391,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     // Handle groups array
     if (column.fieldName === 'groups' && Array.isArray(fieldValue)) {
       return (fieldValue as IGroup[])
-        .map(group => group.Approval_Groups_title)
+        .map(group => group.Approval_Groups_id)
         .join(', ');
     }
 
@@ -415,25 +411,43 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
 
   
 
-  private async fetchUserPresence(userEntraIds: string[]): Promise<Map<string, PersonaPresence>> {
-    
+  private async fetchUserPresence(userObjectIds: string[]): Promise<Map<string, PersonaPresence>> {
     try {
-      const response = await fetch(`https://graph.microsoft.com/v1.0/communications/getPresenceByUserId`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.props.accessToken}` || ''
-        },
-        body: JSON.stringify({ userEntraIds: userEntraIds })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch presence');
+      const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
+      const { userToken } = this.props;
+  
+      if (!userToken) {
+        console.log('No userToken available, aborting fetch');
+        return new Map<string, PersonaPresence>();
       }
-
-      const presenceData: IUserPresence[] = await response.json();
+  
+      let headers = new Headers();
+      headers.append('token', userToken);
+      headers.append('Content-Type', 'application/json');
+  
+      const requestBody = {
+        ids: userObjectIds // Match the Graph API expected format
+      };
+  
+      console.log('Sending presence request with body:', requestBody);
+  
+      const response = await fetch(`${endpoint}/api/presence`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(requestBody)
+      });
+  
+      console.log("Response status:", response.status);
+      const responseText = await response.text();
+      console.log("Response body:", responseText);
+  
+      if (!response.ok) {
+        throw new Error(`Failed to fetch presence: ${response.status} ${responseText}`);
+      }
+  
+      const presenceData: IUserPresence[] = JSON.parse(responseText).value;
       const presenceMap = new Map<string, PersonaPresence>();
-
+  
       presenceData.forEach(presence => {
         let personaPresence = PersonaPresence.none;
         switch (presence.availability.toLowerCase()) {
@@ -455,13 +469,22 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         }
         presenceMap.set(presence.id, personaPresence);
       });
-
+  
+      // Update the state with new presence data
+      this.setState(prevState => ({
+        presence: {
+          ...prevState.presence,
+          ...Object.fromEntries(Array.from(presenceMap.entries()))
+        }
+      }));
+  
       return presenceMap;
     } catch (error) {
       console.error('Error fetching presence:', error);
       return new Map();
     }
   }
+  
 
   private async fetchUserPhoto(EntraId: string): Promise<string | undefined> {
     try {
@@ -500,47 +523,52 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       return;
     }
   
-    // Get all unique users from the approval
-    const users = new Set(approval.groups.flatMap(group => 
-      group.users.map(user => user.Approval_Users_upn)
-    ));
+    // Get all object IDs from the approval members
+    const objectIds = approval.approval_members
+      .map(member => member.data.objectId)
+      .filter((id): id is string => id !== undefined);
   
-    // Fetch presence for all users
-    const presenceMap = await this.fetchUserPresence(Array.from(users));
+    // Fetch presence using object IDs
+    await this.fetchUserPresence(objectIds);
   
-    // Fetch photos for each user
-    const photoPromises = Array.from(users).map(async upn => {
-      const photoUrl = await this.fetchUserPhoto(upn);
-      return { upn, photoUrl };
+    // Fetch photos
+    const photoPromises = approval.approval_members.map(async member => {
+      const photoUrl = await this.fetchUserPhoto(member.data.upn as string);
+      return { upn: member.data.upn as string, photoUrl };
     });
   
     const photos = await Promise.all(photoPromises);
-    const photoMap = new Map(photos.map(p => [p.upn, p.photoUrl]));
-  
-    // Update the approval_members with new data
-    const updatedMembers = approval.approval_members.map(member => ({
-      ...member,
-      imageUrl: photoMap.get(member.data.upn as string) || member.imageUrl,
-      data: {
-        ...member.data,
-        presence: presenceMap.get(member.data.upn as string) || PersonaPresence.none
-      }
-    }));
-  
-    // Update the state
+    
+    // Update photos in state
     this.setState(prevState => ({
-      items: prevState.items.map(item => 
-        item.id === approval.id 
-          ? { ...item, approval_members: updatedMembers }
-          : item
-      ),
       photos: {
         ...prevState.photos,
-        ...Object.fromEntries(photoMap)
+        ...Object.fromEntries(photos
+          .filter(p => p.photoUrl)
+          .map(p => [p.upn, p.photoUrl]))
       }
     }));
   }
   
+  private async fetchPhotosForApproval(approval: IApproval) {
+    const photoPromises = approval.approval_members
+      .filter(member => member.data.upn && !this.state.photos[member.data.upn as string])
+      .map(async member => {
+        const photoUrl = await this.fetchUserPhoto(member.data.upn as string);
+        if (photoUrl) {
+          // Update state immediately when each photo is loaded
+          this.setState(prevState => ({
+            photos: {
+              ...prevState.photos,
+              [member.data.upn as string]: photoUrl
+            }
+          }));
+        }
+        return { upn: member.data.upn as string, photoUrl };
+      });
+  
+    await Promise.all(photoPromises);
+  }
 
   public render() {
     const { columns, isCompactMode, items, selectionDetails, isModalSelection, loading, error } = this.state;

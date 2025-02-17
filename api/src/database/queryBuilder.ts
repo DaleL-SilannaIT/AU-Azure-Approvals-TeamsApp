@@ -161,7 +161,8 @@ function InnerJoinHandler(filterQuery: string): string {
         Approval_Users.actionable AS Approval_Users_actionable,
         Approval_Users.time_zone_offset AS Approval_Users_time_zone_offset,
         Approval_Users.reminder_count AS Approval_Users_reminder_count,
-        Approval_Users.response_datetime AS Approval_Users_response_datetime
+        Approval_Users.response_datetime AS Approval_Users_response_datetime,
+        Approval_Users.object_id AS Approval_Users_object_id
     FROM (${filterQuery}) AS ${tableName}
     INNER JOIN Approval_Groups ON TopApprovals.Approvals_id = Approval_Groups.approval_id
     INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id`;

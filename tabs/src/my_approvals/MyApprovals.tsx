@@ -5,7 +5,7 @@ import { MyApprovalsTable } from './components/table/MyApprovalsTable';
 import { ApprovalFilters } from '../../../api/src/database/interfaces/filters';
 
 export const MyApprovals: React.FC = () => {
-  const { userToken } = useContext(TeamsFxContext);
+  const { userToken, accessToken } = useContext(TeamsFxContext);
   const { teamsUserCredential } = useContext(TeamsFxContext);
   const [filters, setFilters] = useState<ApprovalFilters>({
     sortField: 'id',
@@ -22,18 +22,11 @@ export const MyApprovals: React.FC = () => {
   }, [filters]);
 
   return (
-    // <div className="my-approvals">
-    //   <MyApprovalsTable 
-    //     filters={filters}
-    //     setFilters={setFilters}
-    //     userToken={userToken}
-    //   />
-    // </div>
-
     <MyApprovalsTable
       filters={filters}
       setFilters={setFilters}
       userToken={userToken}
+      accessToken={accessToken}
     />
   );
 };

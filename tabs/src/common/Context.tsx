@@ -7,9 +7,11 @@ export const TeamsFxContext = createContext<{
   themeString: string;
   teamsUserCredential?: TeamsUserCredential;
   userToken?: string;
+  accessToken?: string;
 }>({
   theme: undefined,
   themeString: "",
   teamsUserCredential: undefined,
-  userToken: undefined
+  userToken: undefined,
+  accessToken: undefined,
 });

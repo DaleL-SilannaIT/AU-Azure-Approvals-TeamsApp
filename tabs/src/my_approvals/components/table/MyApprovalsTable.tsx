@@ -1,4 +1,5 @@
 import * as React from 'react';
+import jwtDecode from 'jwt-decode';
 import { TextField } from '@fluentui/react/lib/TextField';
 import { ApprovalFilters } from '../../../../../api/src/database/interfaces/filters';
 import { Toggle } from '@fluentui/react/lib/Toggle';
@@ -8,6 +9,8 @@ import { MarqueeSelection } from '@fluentui/react/lib/MarqueeSelection';
 import { mergeStyleSets } from '@fluentui/react/lib/Styling';
 import { MyApprovalsFilters } from '../filters/MyApprovalsFilters';
 import { ShimmeredDetailsList } from '@fluentui/react';
+import { Facepile, OverflowButtonType, IFacepilePersona } from '@fluentui/react/lib/Facepile';
+import { PersonaPresence, PersonaSize } from '@fluentui/react/lib/Persona';
 
 const classNames = mergeStyleSets({
   fileIconHeaderIcon: {
@@ -60,6 +63,7 @@ export interface IMyApprovalTableState {
   isCompactMode: boolean;
   loading: boolean;
   error: string | null;
+  photos: { [upn: string]: string | undefined }; // Add this line
 }
 
 export interface IApproval {
@@ -71,6 +75,7 @@ export interface IApproval {
   created_datetime: string;
   icon: string;
   groups: IGroup[];
+  approval_members: IFacepilePersona[];
 }
 
 export interface IGroup {
@@ -91,26 +96,51 @@ interface IMyApprovalsTableProps {
   filters: ApprovalFilters;
   setFilters: (filters: ApprovalFilters) => void;
   userToken: string | undefined;
+  accessToken: string | undefined;
+}
+
+interface IUserPresence {
+  id: string;
+  availability: string;
+  activity: string;
+}
+
+interface IUserProfileData {
+  entraId: string;
+  photoUrl?: string;
+  presence?: PersonaPresence;
 }
 
 export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IMyApprovalTableState> {
   private _selection: Selection;
+  private userId: string | undefined;
 
   constructor(props: IMyApprovalsTableProps) {
     super(props);
 
+    // Decode the user token to extract the user ID
+    if (props.userToken) {
+      const decodedToken: any = jwtDecode(props.userToken);
+      this.userId = decodedToken.oid; // Assuming the user ID is in the 'oid' claim
+    }
+
+    const overflowButtonProps = {
+      ariaLabel: 'More users',
+      onClick: (ev: React.MouseEvent<HTMLButtonElement>) => alert('overflow icon clicked'),
+    };
+
     const columns: IColumn[] = [
-      { 
-        key: 'Approvals_icon', 
-        name: 'Icon', 
+      {
+        key: 'Approvals_icon',
+        name: 'Icon',
         fieldName: 'icon',  // Changed to match ApprovalRecord interface
-        minWidth: 50, 
-        maxWidth: 50,
+        minWidth: 51,
+        maxWidth: 51,
         isResizable: true,
         onRender: (item: IApproval) => (
-          <img 
-            src={item.icon} 
-            alt="Approval Icon" 
+          <img
+            src={item.icon}
+            alt="Approval Icon"
             style={{ width: '51px', height: '51px' }}
             onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
               const target = e.target as HTMLImageElement;
@@ -120,12 +150,52 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
           />
         )
       },
-      { key: 'Approvals_id', name: 'Id', fieldName: 'id', minWidth: 50, isSorted: true, isSortedDescending: true, sortAscendingAriaLabel: 'Sorted Small to Large', sortDescendingAriaLabel: 'Sorted Large to Small', onColumnClick: this._onColumnClick },
-      { key: 'Approvals_title', name: 'Title', fieldName: 'title', minWidth: 100, onColumnClick: this._onColumnClick },
-      { key: 'Approvals_subject', name: 'Subject', fieldName: 'subject', minWidth: 100, onColumnClick: this._onColumnClick },
-      { key: 'Approvals_outcome', name: 'Outcome', fieldName: 'outcome', minWidth: 100, onColumnClick: this._onColumnClick },
-      { key: 'Approvals_entity_name', name: 'Entity Name', fieldName: 'entity_name', minWidth: 100, onColumnClick: this._onColumnClick },
-      { key: 'Approvals_created_datetime', name: 'Created Date', fieldName: 'created_datetime', minWidth: 150, onColumnClick: this._onColumnClick },
+      { key: 'Approvals_id', name: 'Id', fieldName: 'id', minWidth: 100, maxWidth: 100, isResizable: true, isSorted: true, isSortedDescending: true, sortAscendingAriaLabel: 'Sorted Small to Large', sortDescendingAriaLabel: 'Sorted Large to Small', onColumnClick: this._onColumnClick },
+      { key: 'Approvals_title', name: 'Title', fieldName: 'title', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
+      { key: 'Approvals_subject', name: 'Subject', fieldName: 'subject', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
+      { key: 'Approvals_outcome', name: 'Outcome', fieldName: 'outcome', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
+      { key: 'Approvals_entity_name', name: 'Entity Name', fieldName: 'entity_name', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
+      { key: 'Approvals_created_datetime', name: 'Created Date', fieldName: 'created_datetime', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
+      {
+        key: 'Approval_members',
+        name: 'Approval Members',
+        fieldName: 'approval_members',  // Changed to match ApprovalRecord interface
+        minWidth: 100,
+        maxWidth: 200,
+        isResizable: true,
+        onRender: (item: IApproval) => (
+          <Facepile
+            personas={item.approval_members}
+            maxDisplayablePersonas={3}
+            overflowButtonType={OverflowButtonType.descriptive}
+            overflowButtonProps={overflowButtonProps}
+            personaSize={PersonaSize.size32}
+            ariaDescription={'To move through the items use left and right arrow keys.'}
+            ariaLabel={'Example list of Facepile personas'}
+            getPersonaProps={(persona: IFacepilePersona) => ({
+              text: persona.personaName,
+              secondaryText: persona.data.upn as string,
+              size: PersonaSize.size32,
+              presence: persona.data.presence,
+              imageShouldFadeIn: true,
+              imageUrl: this.state.photos[persona.data.upn as string], // Use photo from state
+              onRenderInitials: () => {
+                this.fetchUserPhoto(persona.data.upn).then(photoUrl => {
+                  if (photoUrl) {
+                    this.setState(prevState => ({
+                      photos: {
+                        ...prevState.photos,
+                        [persona.data.upn as string]: photoUrl
+                      }
+                    }));
+                  }
+                });
+                return null;
+              }
+            })}
+          />
+        )
+      },
     ];
 
     this._selection = new Selection({
@@ -143,7 +213,8 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       isModalSelection: false,
       isCompactMode: false,
       loading: false,
-      error: null
+      error: null,
+      photos: {} // Add this line
     };
   }
 
@@ -151,9 +222,21 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     this.fetchData(this.props.filters);
   }
 
-  componentDidUpdate(prevProps: IMyApprovalsTableProps) {
+  componentDidUpdate(prevProps: IMyApprovalsTableProps, prevState: IMyApprovalTableState) {
     if (prevProps.filters !== this.props.filters || prevProps.userToken !== this.props.userToken) {
       this.fetchData(this.props.filters);
+    }
+
+    // Add logging for accessToken changes
+    if (prevProps.accessToken !== this.props.accessToken) {
+      console.log('Access token updated:', this.props.accessToken ? 'present' : 'undefined');
+    }
+
+    // Check if items have changed and update user profiles
+    if (prevState.items !== this.state.items && this.props.accessToken) {
+      this.state.items.forEach(item => {
+        this.updateUserProfiles(item);
+      });
     }
   }
 
@@ -244,7 +327,8 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
           entity_name: record.Approvals_entity_name,
           created_datetime: record.Approvals_created_datetime,
           icon: record.Approvals_icon,
-          groups: []
+          groups: [],
+          approval_members: []
         };
       }
 
@@ -260,15 +344,27 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         approval.groups.push(group);
       }
 
-      group.users.push({
+      const user = {
         Approval_Users_id: record.Approval_Users_id,
         Approval_Users_upn: record.Approval_Users_upn,
         Approval_Users_email: record.Approval_Users_email,
         Approval_Users_display_name: record.Approval_Users_display_name,
         Approval_Users_notes: JSON.parse(record.Approval_Users_notes)
-      });
-    });
+      };
 
+      group.users.push(user);
+
+      // Add user to approval_members if not already present
+      if (!approval.approval_members.some(member => member.id === user.Approval_Users_id)) {
+        approval.approval_members.push({
+          personaName: user.Approval_Users_display_name,
+          imageUrl: '', // Add appropriate image URL if available
+          imageInitials: user.Approval_Users_display_name.split(' ').map((name: string) => name[0]).join(''),
+          data: {upn: user.Approval_Users_upn, presence: PersonaPresence.online}
+        });
+      }
+    });
+    
     return Object.values(approvalsMap);
   };
 
@@ -280,9 +376,9 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     // Special handling for icon column
     if (column.key === 'Approvals_icon') {
       return (
-        <img 
-          src={item.icon} 
-          alt="Approval Icon" 
+        <img
+          src={item.icon}
+          alt="Approval Icon"
           style={{ width: '51px', height: '51px' }}
           onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
             const target = e.target as HTMLImageElement;
@@ -295,11 +391,156 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
 
     // Default handling for other columns
     const fieldValue = item[column.fieldName as keyof IApproval];
-    if (Array.isArray(fieldValue)) {
-      return fieldValue.map(group => group.Approval_Groups_title).join(', ');
+    
+    // Handle groups array
+    if (column.fieldName === 'groups' && Array.isArray(fieldValue)) {
+      return (fieldValue as IGroup[])
+        .map(group => group.Approval_Groups_title)
+        .join(', ');
     }
-    return fieldValue;
+
+    // Handle approval_members array
+    if (column.fieldName === 'approval_members' && Array.isArray(fieldValue)) {
+      return null; // The Facepile component is rendered through the column's onRender property
+    }
+
+    // Convert any non-string values to string representation
+    if (typeof fieldValue === 'object') {
+      return JSON.stringify(fieldValue);
+    }
+
+    // Return the field value as string for primitive types
+    return String(fieldValue);
   };
+
+  
+
+  private async fetchUserPresence(userEntraIds: string[]): Promise<Map<string, PersonaPresence>> {
+    
+    try {
+      const response = await fetch(`https://graph.microsoft.com/v1.0/communications/getPresenceByUserId`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.props.accessToken}` || ''
+        },
+        body: JSON.stringify({ userEntraIds: userEntraIds })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch presence');
+      }
+
+      const presenceData: IUserPresence[] = await response.json();
+      const presenceMap = new Map<string, PersonaPresence>();
+
+      presenceData.forEach(presence => {
+        let personaPresence = PersonaPresence.none;
+        switch (presence.availability.toLowerCase()) {
+          case 'available':
+            personaPresence = PersonaPresence.online;
+            break;
+          case 'busy':
+            personaPresence = PersonaPresence.busy;
+            break;
+          case 'donotdisturb':
+            personaPresence = PersonaPresence.dnd;
+            break;
+          case 'away':
+            personaPresence = PersonaPresence.away;
+            break;
+          case 'offline':
+            personaPresence = PersonaPresence.offline;
+            break;
+        }
+        presenceMap.set(presence.id, personaPresence);
+      });
+
+      return presenceMap;
+    } catch (error) {
+      console.error('Error fetching presence:', error);
+      return new Map();
+    }
+  }
+
+  private async fetchUserPhoto(EntraId: string): Promise<string | undefined> {
+    try {
+      const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
+
+      const { userToken } = this.props;
+
+      if (!userToken) {
+        console.log('No userToken available, aborting fetch');
+        return;
+      }
+
+      let headers = new Headers();
+      headers.append('token', userToken);
+
+      const response = await fetch(`${endpoint}/api/connection?EntraId=${EntraId}`, {
+        method: 'POST',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        return undefined;
+      }
+
+      const blob = await response.blob();
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('Error fetching photo:', error);
+      return undefined;
+    }
+  }
+
+  private async updateUserProfiles(approval: IApproval): Promise<void> {
+    if (!this.props.accessToken) {
+      console.log('No access token available, skipping profile updates');
+      return;
+    }
+  
+    // Get all unique users from the approval
+    const users = new Set(approval.groups.flatMap(group => 
+      group.users.map(user => user.Approval_Users_upn)
+    ));
+  
+    // Fetch presence for all users
+    const presenceMap = await this.fetchUserPresence(Array.from(users));
+  
+    // Fetch photos for each user
+    const photoPromises = Array.from(users).map(async upn => {
+      const photoUrl = await this.fetchUserPhoto(upn);
+      return { upn, photoUrl };
+    });
+  
+    const photos = await Promise.all(photoPromises);
+    const photoMap = new Map(photos.map(p => [p.upn, p.photoUrl]));
+  
+    // Update the approval_members with new data
+    const updatedMembers = approval.approval_members.map(member => ({
+      ...member,
+      imageUrl: photoMap.get(member.data.upn as string) || member.imageUrl,
+      data: {
+        ...member.data,
+        presence: presenceMap.get(member.data.upn as string) || PersonaPresence.none
+      }
+    }));
+  
+    // Update the state
+    this.setState(prevState => ({
+      items: prevState.items.map(item => 
+        item.id === approval.id 
+          ? { ...item, approval_members: updatedMembers }
+          : item
+      ),
+      photos: {
+        ...prevState.photos,
+        ...Object.fromEntries(photoMap)
+      }
+    }));
+  }
+  
 
   public render() {
     const { columns, isCompactMode, items, selectionDetails, isModalSelection, loading, error } = this.state;
@@ -308,32 +549,12 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     return (
       <Fabric>
         <div className="my-approvals-filters-container">
-          <MyApprovalsFilters 
+          <MyApprovalsFilters
             filters={filters}
             onApplyFilters={setFilters}
           />
         </div>
         {error && <div className="error">{error}</div>}
-        {/* <div className={classNames.controlWrapper}>
-          <Toggle
-            label="Enable compact mode"
-            checked={isCompactMode}
-            onChange={this._onChangeCompactMode}
-            onText="Compact"
-            offText="Normal"
-            styles={controlStyles}
-          />
-          <Toggle
-            label="Enable modal selection"
-            checked={isModalSelection}
-            onChange={this._onChangeModalSelection}
-            onText="Modal"
-            offText="Normal"
-            styles={controlStyles}
-          />
-          <TextField label="Filter by name:" onChange={this._onChangeText} styles={controlStyles} />
-        </div>
-        <div className={classNames.selectionDetails}>{selectionDetails}</div> */}
         <MarqueeSelection selection={this._selection}>
           <ShimmeredDetailsList
             items={items}

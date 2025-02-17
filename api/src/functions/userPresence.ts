@@ -17,7 +17,7 @@ const authConfig: AppCredentialAuthConfig = {
  * @param {HttpRequest} req - The HTTP request.
  * @param {InvocationContext} context - The Azure Functions context object.
  */
-export async function connection(
+export async function userPresence(
   req: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
@@ -64,15 +64,15 @@ export async function connection(
     
 
     // Fetch the user's photo
-    const photoResponse = await graphClient.api(`/users/${EntraId}/photos/96x96/$value`).get();
+    const presenceResponse = await graphClient.api(`/communications/getPresencesByUserId`).post({body: [EntraId]});
 
     // Return the photo as a binary stream
     return {
       status: 200,
       headers: {
-        "Content-Type": "image/jpeg", // Adjust the content type based on the image format
+        "Content-Type": "application/json", // Adjust the content type based on the image format
       },
-      body: photoResponse,
+      body: presenceResponse,
     };
   } catch (e) {
     context.error(e);
@@ -92,8 +92,8 @@ export async function connection(
   }
 }
 
-app.http("connection", {
+app.http("userPresence", {
   methods: ["POST"],
   authLevel: "anonymous",
-  handler: connection,
+  handler: userPresence,
 });

@@ -20,6 +20,7 @@
         "@microsoft/teams-js": "^2.33.0",
         "@types/mssql": "^9.1.6",
         "dotenv": "^16.4.7",
+        "http-proxy-middleware": "^3.0.3",
         "msnodesqlv8": "^4.4.0",
         "mssql": "^11.0.1",
         "react-router-dom": "^6.29.0"

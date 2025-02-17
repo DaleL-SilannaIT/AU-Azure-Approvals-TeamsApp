@@ -43,7 +43,7 @@ export async function data(
 
     // Parse form-data parameters
     const params = await req.formData();
-    console.log("Form data parameters:", params);
+    //console.log("Form data parameters:", params);
     const sortField = params.get('sortField') as keyof ApprovalRecord | undefined;
     const sortOrder = params.get('sortOrder') === 'desc' ? 'DESC' : 'ASC';
     const topCount = params.get('topCount') ? parseInt(params.get('topCount') as string) : 50;
@@ -64,16 +64,13 @@ export async function data(
     // }
 
     try {
-      console.log('approvalRecordFilters:', params.get('approvalRecordFilters'));
-      let temp = JSON.parse(params.get('approvalRecordFilters') as string);
-      temp.forEach((element: any) => {
-        console.log('element:', element);
-      });
+      //console.log('approvalRecordFilters:', params.get('approvalRecordFilters'));
+      
       approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
       //approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
       //approvalGroupFilters = JSON.parse(params.get('approvalGroupFilters') as string) as ApprovalGroupFilters[];
       //approvalUserFilters = JSON.parse(params.get('approvalUserFilters') as string) as ApprovalUserFilters[];
-      console.log("Parsed filters:", { approvalRecordFilters, approvalGroupFilters, approvalUserFilters });
+      //console.log("Parsed filters:", { approvalRecordFilters, approvalGroupFilters, approvalUserFilters });
     } catch (err) {
       console.error("Invalid filter data:", err);
       return {
@@ -84,12 +81,12 @@ export async function data(
 
     const approvalFilters: ApprovalFilters = { approvalRecordFilters, approvalGroupFilters, approvalUserFilters, topCount, sortField, sortOrder, skipCount };
     let query = `SELECT TOP 50 * FROM Approvals`;
-    console.log("Initial query:", query);
+    //console.log("Initial query:", query);
     query = await FilterQueryBuilder(approvalFilters,claims.payload.upn,secGrps);
-    console.log("Constructed query:", query);
+    //console.log("Constructed query:", query);
 
     const resultSet = await poolConnection.request().query(query);
-    console.log(`${resultSet.recordset.length} rows returned.`);
+    //console.log(`${resultSet.recordset.length} rows returned.`);
 
     // Close connection only when we're certain application is finished
     poolConnection.close();

@@ -1,4 +1,4 @@
-import { IMyApprovalTableState, IApproval, IGroup, IUser, IMyApprovalsTableProps, IUserPresence, IDecodedToken} from '../services/Interfaces';
+import { IUserPhotoInfo, IApproval } from '../services/Interfaces';
 
 export async function fetchUserPhoto(EntraId: string, userToken: string | undefined): Promise<string | undefined> {
   try {
@@ -29,8 +29,26 @@ export async function fetchUserPhoto(EntraId: string, userToken: string | undefi
   }
 }
 
+export function extractDistinctUsers(approvals: IApproval[]): IUserPhotoInfo[] {
+  const distinctUsers = new Map<string, IUserPhotoInfo>();
+  
+  approvals.forEach(approval => {
+    approval.approval_members.forEach(member => {
+      if (member.data.upn && !distinctUsers.has(member.data.upn)) {
+        distinctUsers.set(member.data.upn, {
+          upn: member.data.upn,
+          objectId: member.data.objectId,
+          displayName: member.personaName
+        });
+      }
+    });
+  });
+
+  return Array.from(distinctUsers.values());
+}
+
 export async function fetchPhotosForApproval(
-  approval: IApproval, 
+  users: IUserPhotoInfo[], 
   userToken: string, 
   currentPhotos: { [upn: string]: string | undefined }, 
   updateState: (photos: { [upn: string]: string | undefined }) => void
@@ -38,18 +56,32 @@ export async function fetchPhotosForApproval(
   const newPhotos: { [upn: string]: string | undefined } = {};
   let hasUpdates = false;
   
-  for (const member of approval.approval_members) {
-    if (member.data.upn && !currentPhotos[member.data.upn]) {
-      const photoUrl = await fetchUserPhoto(member.data.upn, userToken);
-      if (photoUrl) {
-        newPhotos[member.data.upn] = photoUrl;
+  // Process users in parallel batches of 5
+  const batchSize = 5;
+  for (let i = 0; i < users.length; i += batchSize) {
+    const batch = users.slice(i, i + batchSize);
+    const photoPromises = batch.map(async user => {
+      if (user.upn && !currentPhotos[user.upn]) {
+        const photoUrl = await fetchUserPhoto(user.upn, userToken);
+        if (photoUrl) {
+          return { upn: user.upn, photoUrl };
+        }
+      }
+      return null;
+    });
+
+    const results = await Promise.all(photoPromises);
+    results.forEach(result => {
+      if (result) {
+        newPhotos[result.upn] = result.photoUrl;
         hasUpdates = true;
       }
-    }
-  }
+    });
 
-  if (hasUpdates) {
-    console.log('Updating photos with:', newPhotos);
-    updateState(newPhotos);
+    // Update state after each batch if we have new photos
+    if (hasUpdates) {
+      console.log(`Updating photos batch ${i/batchSize + 1} with:`, newPhotos);
+      updateState(newPhotos);
+    }
   }
 }

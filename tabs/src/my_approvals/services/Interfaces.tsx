@@ -2,16 +2,17 @@ import { Facepile, OverflowButtonType, IFacepilePersona } from '@fluentui/react/
 import { PersonaPresence, PersonaSize } from '@fluentui/react/lib/Persona';
 import { DetailsListLayoutMode, Selection, SelectionMode, IColumn } from '@fluentui/react/lib/DetailsList';
 import { ApprovalFilters } from '../../../../api/src/database/interfaces/filters';
+import { JwtPayload } from 'jsonwebtoken';
 
 export interface IMyApprovalTableState {
-  columns: IColumn[];
   items: IApproval[];
+  columns: IColumn[];
   selectionDetails: string;
   isModalSelection: boolean;
   isCompactMode: boolean;
   loading: boolean;
   error: string | null;
-  photos: { [upn: string]: string | undefined }; // Add this line
+  photos: { [upn: string]: string | undefined };
   presence: { [objectId: string]: PersonaPresence };
 }
 
@@ -55,7 +56,19 @@ export interface IUserPresence {
   activity: string;
 }
 
-export interface IDecodedToken {
-  oid: string; // Object ID claim from Azure AD
-  // ... other claims
+// export interface IDecodedToken {
+//   oid: string; // Object ID claim from Azure AD
+//   // ... other claims
+// }
+
+
+export interface IDecodedToken extends JwtPayload {
+  objectId?: string;
+  upn?: string;
 }
+
+export interface IUserPhotoInfo {
+    upn: string;
+    objectId?: string;
+    displayName?: string;
+  }

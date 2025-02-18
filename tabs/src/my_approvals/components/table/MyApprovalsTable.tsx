@@ -11,10 +11,10 @@ import { MyApprovalsFilters } from '../filters/MyApprovalsFilters';
 import { ShimmeredDetailsList } from '@fluentui/react';
 import { Facepile, OverflowButtonType, IFacepilePersona } from '@fluentui/react/lib/Facepile';
 import { PersonaPresence, PersonaSize } from '@fluentui/react/lib/Persona';
-import { fetchPhotosForApproval } from '../../services/userPhotos';
+import { fetchPhotosForApproval, fetchUserPhoto} from '../../services/userPhotos';
 import { fetchUserPresence } from '../../services/userPresence';
 import { IMyApprovalTableState, IApproval, IGroup, IUser, IMyApprovalsTableProps, IUserPresence, IDecodedToken} from '../../services/Interfaces';
-
+import { fetchData } from '../../services/fetchData';
 
 export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IMyApprovalTableState> {
   private _selection: Selection;
@@ -114,207 +114,37 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   }
 
   componentDidMount() {
-    this.fetchData(this.props.filters);
+    this.handleFetchData(this.props.filters);
   }
 
   componentDidUpdate(prevProps: IMyApprovalsTableProps, prevState: IMyApprovalTableState) {
-    // Check if filters or token changed
     if (prevProps.filters !== this.props.filters || prevProps.userToken !== this.props.userToken) {
-      this.fetchData(this.props.filters);
-      return; // Exit early to prevent double updates
+      this.handleFetchData(this.props.filters);
+      return;
     }
 
     // Check if items have changed but not due to a filter change
     if (prevState.items !== this.state.items && 
         prevProps.filters === this.props.filters) {
       console.log('Items changed, updating profiles');
-      this.state.items.forEach(item => {
-        this.updateUserProfiles(item);
-      });
+      this.updateUserProfiles(this.state.items); // Pass all items at once
     }
   }
 
-  fetchData = async (filters: ApprovalFilters) => {
-    const { userToken } = this.props;
+  private handleFetchData = async (filters: ApprovalFilters) => {
+    if (!this.props.userToken) return;
 
-    if (!userToken) {
-      console.log('No userToken available, aborting fetch');
-      return;
-    }
-
-    console.log('Starting fetch with filters:', filters); // Debug log
-    this.setState({ loading: true });
-
-    try {
-      const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
-      let formData = new FormData();
-
-      // Append non-array filters
-      (Object.keys(filters) as (keyof ApprovalFilters)[]).forEach(key => {
-        if (!Array.isArray(filters[key])) {
-          formData.append(key, filters[key] as string);
-          console.log(`Adding filter: ${key}=${filters[key]}`); // Debug log
-        }
-      });
-
-      // Append array filters as JSON strings
-      formData.append('approvalRecordFilters', JSON.stringify(filters.approvalRecordFilters));
-      formData.append('approvalGroupFilters', JSON.stringify(filters.approvalGroupFilters));
-      formData.append('approvalUserFilters', JSON.stringify(filters.approvalUserFilters));
-
-      console.log('record filters length', filters.approvalRecordFilters.length)
-      console.log('Stringified record filters', JSON.stringify(filters.approvalRecordFilters))
-      let headers = new Headers();
-      headers.append('token', userToken);
-
-      // Debug: Log formatted data
-      const formDataObj: Record<string, any> = {};
-      formData.forEach((value, key) => {
-        formDataObj[key] = value;
-      });
-      console.table(formDataObj);
-
-      const response = await fetch(`${endpoint}/api/data`, {
-        method: 'POST',
-        body: formData,
-        headers: headers
-      });
-
-      console.log('Response status:', response.status); // Debug log
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: IApproval[] = await response.json();
-      console.log('Fetched data:', data); // Debug log
-
-      const formattedData = this.restructureData(data);
-      console.log('Formatted data:', formattedData); // Debug log
-
-      if (!formattedData || formattedData.length === 0) {
-        this.setState({ items: [] });
-      } else {
-        this.setState({ items: formattedData }, async () => {
-          // After state is updated, fetch presence for all users
-          const objectIds = new Set<string>();
-          formattedData.forEach(item => {
-            item.approval_members.forEach(member => {
-              if (member.data.objectId) {
-                objectIds.add(member.data.objectId as string);
-              }
-            });
-          });
-
-          if (objectIds.size > 0) {
-            console.log('Fetching presence for users:', Array.from(objectIds));
-            const presenceMap = await fetchUserPresence(Array.from(objectIds), this.props.userToken);
-            
-            // Update presence state
-            this.setState(prevState => ({
-              presence: {
-                ...prevState.presence,
-                ...Object.fromEntries(presenceMap)
-              }
-            }));
-          }
-
-          // Fetch photos for each approval
-          formattedData.forEach(approval => {
-            fetchPhotosForApproval(
-              approval,
-              this.props.userToken!,
-              this.state.photos,
-              (newPhotos) => {
-                this.setState(prevState => ({
-                  photos: {
-                    ...prevState.photos,
-                    ...newPhotos
-                  }
-                }));
-              }
-            );
-          });
-        });
-      }
-
-    } catch (err) {
-      console.error('Fetch error:', err); // Debug log
-      this.setState({ error: err instanceof Error ? err.message : 'An unknown error occurred', items: [] });
-    } finally {
-      console.log('Fetch complete, setting loading false'); // Debug log
-      this.setState({ loading: false });
-    }
-  };
-
-  restructureData = (data: any[]): IApproval[] => {
-    const approvalsMap: { [key: string]: IApproval } = {};
-    // Decode the token once
-    const decodedToken = this.props.userToken ? jwtDecode<IDecodedToken>(this.props.userToken) : null;
-  
-    data.forEach(record => {
-      if (!approvalsMap[record.Approvals_id]) {
-        approvalsMap[record.Approvals_id] = {
-          id: record.Approvals_id,
-          title: record.Approvals_title,
-          subject: record.Approvals_subject,
-          outcome: record.Approvals_outcome,
-          entity_name: record.Approvals_entity_name,
-          created_datetime: record.Approvals_created_datetime,
-          icon: record.Approvals_icon,
-          groups: [],
-          approval_members: []
-        };
-      }
-  
-      const approval = approvalsMap[record.Approvals_id];
-  
-      let group = approval.groups.find(g => g.Approval_Groups_id === record.Approval_Groups_id);
-      if (!group) {
-        group = {
-          Approval_Groups_id: record.Approval_Groups_id,
-          Approval_Groups_title: record.Approval_Groups_title,
-          users: []
-        };
-        approval.groups.push(group);
-      }
-  
-      const user = {
-        Approval_Users_id: record.Approval_Users_id,
-        Approval_Users_upn: record.Approval_Users_upn,
-        Approval_Users_email: record.Approval_Users_email,
-        Approval_Users_display_name: record.Approval_Users_display_name,
-        Approval_Users_notes: JSON.parse(record.Approval_Users_notes),
-        Approval_Users_object_id: record.Approval_Users_object_id
-      };
-  
-      group.users.push(user);
-  
-      // Add user to approval_members if not already present
-      if (!approval.approval_members.some(member => member.id === user.Approval_Users_id)) {
-        approval.approval_members.push({
-          personaName: user.Approval_Users_display_name,
-          imageUrl: '', // Add appropriate image URL if available
-          imageInitials: user.Approval_Users_display_name.split(' ').map((name: string) => name[0]).join(''),
-          data: {
-            upn: user.Approval_Users_upn,
-            presence: PersonaPresence.offline,
-            objectId: user.Approval_Users_object_id // Add the object ID from the token
-          }
-        });
+    await fetchData({
+      userToken: this.props.userToken,
+      filters,
+      onStateUpdate: (updates) => {
+        this.setState(prevState => ({
+          ...prevState,
+          ...updates
+        }));
       }
     });
-      
-    const approvals = Object.values(approvalsMap);
-    
-    // Now update both photos and presence
-    approvals.forEach(approval => {
-      this.updateUserProfiles(approval);
-    });
-    
-    return approvals;
   };
-  
 
   private onRenderItemColumn = (item?: IApproval, index?: number, column?: IColumn): React.ReactNode => {
     if (!item || !column?.key) {
@@ -362,20 +192,35 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   };
 
 
-  private async updateUserProfiles(approval: IApproval): Promise<void> {
+  private async updateUserProfiles(approvals: IApproval[]): Promise<void> {
     if (!this.props.accessToken || !this.props.userToken) {
       console.log('No tokens available, skipping profile updates');
       return;
     }
   
     try {
-      const objectIds = approval.approval_members
-        .map(member => member.data.objectId)
-        .filter((id): id is string => id !== undefined);
+      // Create sets of distinct user identifiers
+      const distinctUserIds = new Set<string>();
+      const distinctUpns = new Set<string>();
+      
+      // Collect distinct users across all approvals
+      approvals.forEach(approval => {
+        approval.approval_members.forEach(member => {
+          if (member.data.objectId) {
+            distinctUserIds.add(member.data.objectId);
+          }
+          if (member.data.upn) {
+            distinctUpns.add(member.data.upn);
+          }
+        });
+      });
   
-      if (objectIds.length > 0) {
-        console.log('Fetching presence for approval members:', objectIds);
-        const presenceMap = await fetchUserPresence(objectIds, this.props.userToken);
+      console.log(`Found ${distinctUserIds.size} distinct users`);
+  
+      // Batch fetch presence for all distinct users
+      if (distinctUserIds.size > 0) {
+        console.log('Fetching presence for distinct users:', Array.from(distinctUserIds));
+        const presenceMap = await fetchUserPresence(Array.from(distinctUserIds), this.props.userToken);
         
         if (presenceMap.size > 0) {
           this.setState(prevState => ({
@@ -383,29 +228,36 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
               ...prevState.presence,
               ...Object.fromEntries(presenceMap)
             }
-          }), () => {
-            console.log('Updated presence state:', this.state.presence);
-          });
+          }));
         }
       }
   
-      await fetchPhotosForApproval(
-        approval,
-        this.props.userToken,
-        this.state.photos,
-        (newPhotos) => {
-          if (Object.keys(newPhotos).length > 0) {
-            this.setState(prevState => ({
-              photos: {
-                ...prevState.photos,
-                ...newPhotos
-              }
-            }), () => {
-              console.log('Updated photos state:', this.state.photos);
-            });
-          }
+      // Batch fetch photos for all distinct users
+      const photoPromises = Array.from(distinctUpns).map(async upn => {
+        if (!this.state.photos[upn]) {
+          const photoUrl = await fetchUserPhoto(upn, this.props.userToken);
+          return { upn, photoUrl };
         }
-      );
+        return null;
+      });
+  
+      const photoResults = await Promise.all(photoPromises);
+      const newPhotos = photoResults.reduce((acc, result) => {
+        if (result && result.photoUrl) {
+          acc[result.upn] = result.photoUrl;
+        }
+        return acc;
+      }, {} as { [upn: string]: string });
+  
+      if (Object.keys(newPhotos).length > 0) {
+        this.setState(prevState => ({
+          photos: {
+            ...prevState.photos,
+            ...newPhotos
+          }
+        }));
+      }
+  
     } catch (error) {
       console.error('Error updating user profiles:', error);
     }

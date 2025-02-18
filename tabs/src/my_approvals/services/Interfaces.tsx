@@ -1,0 +1,61 @@
+import { Facepile, OverflowButtonType, IFacepilePersona } from '@fluentui/react/lib/Facepile';
+import { PersonaPresence, PersonaSize } from '@fluentui/react/lib/Persona';
+import { DetailsListLayoutMode, Selection, SelectionMode, IColumn } from '@fluentui/react/lib/DetailsList';
+import { ApprovalFilters } from '../../../../api/src/database/interfaces/filters';
+
+export interface IMyApprovalTableState {
+  columns: IColumn[];
+  items: IApproval[];
+  selectionDetails: string;
+  isModalSelection: boolean;
+  isCompactMode: boolean;
+  loading: boolean;
+  error: string | null;
+  photos: { [upn: string]: string | undefined }; // Add this line
+  presence: { [objectId: string]: PersonaPresence };
+}
+
+export interface IApproval {
+  id: string;
+  title: string;
+  subject: string;
+  outcome: string;
+  entity_name: string;
+  created_datetime: string;
+  icon: string;
+  groups: IGroup[];
+  approval_members: IFacepilePersona[];
+}
+
+export interface IGroup {
+  Approval_Groups_id: number;
+  Approval_Groups_title: string;
+  users: IUser[];
+}
+
+export interface IUser {
+  Approval_Users_id: number;
+  Approval_Users_upn: string;
+  Approval_Users_email: string;
+  Approval_Users_display_name: string;
+  Approval_Users_notes: string[];
+  Approval_Users_object_id: string;
+}
+
+export interface IMyApprovalsTableProps {
+  filters: ApprovalFilters;
+  setFilters: (filters: ApprovalFilters) => void;
+  userToken: string | undefined;
+  accessToken: string | undefined;
+}
+
+export interface IUserPresence {
+  id: string;
+  availability: string;
+  activity: string;
+}
+
+export interface IDecodedToken {
+  oid: string; // Object ID claim from Azure AD
+  // ... other claims
+}

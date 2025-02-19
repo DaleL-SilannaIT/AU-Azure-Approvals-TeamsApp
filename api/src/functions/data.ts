@@ -29,10 +29,10 @@ export async function data(
   }
 
   const claims = await verifyJWT(token);
-  console.log('Decoded token:', claims); // Debugging log
+  //console.log('Decoded token:', claims); // Debugging log
 
   const secGrps = [] //await getSecGrps(claims?.upn);
-  console.log('User security groups:', secGrps); // Debugging log
+  //console.log('User security groups:', secGrps); // Debugging log
 
   let poolConnection: sql.ConnectionPool | null = null;
   context.log("Starting function execution");
@@ -83,7 +83,7 @@ export async function data(
     let query = `SELECT TOP 50 * FROM Approvals`;
     //console.log("Initial query:", query);
     query = await FilterQueryBuilder(approvalFilters,claims.payload.upn,secGrps);
-    //console.log("Constructed query:", query);
+    console.log("Constructed query:", query);
 
     const resultSet = await poolConnection.request().query(query);
     //console.log(`${resultSet.recordset.length} rows returned.`);

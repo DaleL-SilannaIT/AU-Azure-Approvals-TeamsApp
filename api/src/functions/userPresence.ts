@@ -21,12 +21,12 @@ export async function presence(
     req: HttpRequest,
     context: InvocationContext
 ): Promise<HttpResponseInit> {
-    context.log("HTTP trigger function processed a request.");
+    console.log("HTTP trigger function processed a request - userPresence.");
     interface PresenceRequest {ids?: string[]}
     try {
         // Parse the request body
         const requestBody: PresenceRequest = await req.json();
-        context.log('Request body:', requestBody);
+        console.log('Request body:', requestBody);
 
         if (!requestBody.ids || !Array.isArray(requestBody.ids) || requestBody.ids.length === 0) {
             return {
@@ -66,7 +66,7 @@ export async function presence(
         // Call Graph API with the correct request body structure
         const presenceResponse = await graphClient.api('/communications/getPresencesByUserId').post(requestBody);
 
-        context.log('User presence response:', presenceResponse);
+        console.log('User presence response:', presenceResponse);
         return {
             status: 200,
             headers: {

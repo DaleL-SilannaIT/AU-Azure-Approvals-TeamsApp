@@ -74,52 +74,17 @@ export async function fetchData({ userToken, filters, onStateUpdate }: FetchData
     const formattedData = restructureData(data, userToken);
     console.log('Formatted data:', formattedData);
 
-    if (!formattedData || formattedData.length === 0) {
-      onStateUpdate({ items: [] });
-    } else {
-      // Update items first
-      onStateUpdate({ items: formattedData });
-      
-      // Collect distinct users across all approvals
-      const distinctUsers = new Map<string, IUserPhotoInfo>();
-      formattedData.forEach(item => {
-        item.approval_members.forEach(member => {
-          if (member.data.upn && !distinctUsers.has(member.data.upn)) {
-            distinctUsers.set(member.data.upn, {
-              upn: member.data.upn,
-              objectId: member.data.objectId
-            });
-          }
-        });
-      });
+    // Update table data immediately
+    onStateUpdate({ 
+      items: formattedData,
+      loading: false 
+    });
 
-      // Fetch presence for all users at once
-      const objectIds = Array.from(distinctUsers.values())
-        .map(user => user.objectId)
-        .filter((id): id is string => id !== undefined);
+    // Then fetch profiles asynchronously
+    setTimeout(() => {
+      updateUserProfilesAsync(formattedData, userToken, onStateUpdate);
+    }, 0);
 
-      if (objectIds.length > 0) {
-        console.log('Fetching presence for users:', objectIds);
-        const presenceMap = await fetchUserPresence(objectIds, userToken);
-        onStateUpdate({
-          presence: Object.fromEntries(presenceMap)
-        });
-      }
-
-      // Fetch photos for all distinct users at once
-      console.log('Fetching photos for distinct users:', Array.from(distinctUsers.values()));
-      await fetchPhotosForApproval(
-        Array.from(distinctUsers.values()),
-        userToken,
-        {},
-        (newPhotos) => {
-          onStateUpdate({
-            photos: newPhotos
-          });
-        }
-      );
-    }
-    // ...rest of error handling...
   } catch (err) {
     console.error('Fetch error:', err); // Debug log
     onStateUpdate({ error: err instanceof Error ? err.message : 'An unknown error occurred', items: [] });
@@ -127,6 +92,50 @@ export async function fetchData({ userToken, filters, onStateUpdate }: FetchData
     console.log('Fetch complete, setting loading false'); // Debug log
     onStateUpdate({ loading: false });
   }
+}
+
+async function updateUserProfilesAsync(
+  formattedData: IApproval[], 
+  userToken: string,
+  onStateUpdate: FetchDataOptions['onStateUpdate']
+) {
+  // Extract distinct users
+  const distinctUsers = new Map<string, IUserPhotoInfo>();
+  formattedData.forEach(item => {
+    item.approval_members.forEach(member => {
+      if (member.data.upn && !distinctUsers.has(member.data.upn)) {
+        distinctUsers.set(member.data.upn, {
+          upn: member.data.upn,
+          objectId: member.data.objectId
+        });
+      }
+    });
+  });
+
+  // Fetch presence asynchronously
+  const objectIds = Array.from(distinctUsers.values())
+    .map(user => user.objectId)
+    .filter((id): id is string => id !== undefined);
+
+  if (objectIds.length > 0) {
+    fetchUserPresence(objectIds, userToken).then(presenceMap => {
+      onStateUpdate({
+        presence: Object.fromEntries(presenceMap)
+      });
+    });
+  }
+
+  // Fetch photos asynchronously
+  fetchPhotosForApproval(
+    Array.from(distinctUsers.values()),
+    userToken,
+    {},
+    (newPhotos) => {
+      onStateUpdate({
+        photos: newPhotos
+      });
+    }
+  );
 }
 
 function restructureData(data: any[], userToken: string): IApproval[] {

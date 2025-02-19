@@ -17,11 +17,11 @@ const authConfig: AppCredentialAuthConfig = {
  * @param {HttpRequest} req - The HTTP request.
  * @param {InvocationContext} context - The Azure Functions context object.
  */
-export async function connection(
+export async function userPhoto(
   req: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  context.log("HTTP trigger function processed a request.");
+  console.log("HTTP trigger function processed a request - userPhotos.");
 
   const EntraId = req.query.get("EntraId");
 
@@ -92,8 +92,8 @@ export async function connection(
   }
 }
 
-app.http("connection", {
+app.http("userPhoto", {
   methods: ["POST"],
   authLevel: "anonymous",
-  handler: connection,
+  handler: userPhoto,
 });

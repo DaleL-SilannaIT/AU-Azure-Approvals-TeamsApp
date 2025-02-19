@@ -92,7 +92,7 @@ export default function App() {
   // }
 
   const fetchAccessToken = async () => {
-    const response = await fetch(`${endpoint}/api/connection?upn=dalel@silanna.com`, {
+    const response = await fetch(`${endpoint}/api/userPhoto?upn=dalel@silanna.com`, {
     })
 
     const data = await response;

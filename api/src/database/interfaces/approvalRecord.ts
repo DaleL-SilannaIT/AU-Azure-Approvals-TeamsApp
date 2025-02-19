@@ -5,8 +5,7 @@ export interface ApprovalRecord {
     body: string;
     outcome: string;
     outcome_colour: string;
-    parent_source: string;
-    child_source: string;
+    source_id: number;
     entity_id: number;
     entity_name: string;
     entity_url: string;

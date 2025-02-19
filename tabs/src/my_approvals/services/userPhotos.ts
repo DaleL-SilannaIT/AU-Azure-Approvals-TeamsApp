@@ -12,7 +12,7 @@ export async function fetchUserPhoto(EntraId: string, userToken: string | undefi
     let headers = new Headers();
     headers.append('token', userToken);
 
-    const response = await fetch(`${endpoint}/api/connection?EntraId=${EntraId}`, {
+    const response = await fetch(`${endpoint}/api/userPhoto?EntraId=${EntraId}`, {
       method: 'POST',
       headers: headers
     });

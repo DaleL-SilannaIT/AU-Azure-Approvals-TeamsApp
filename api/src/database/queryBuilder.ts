@@ -10,7 +10,7 @@ export async function FilterQueryBuilder(filters: ApprovalFilters, userUPN: stri
     return innerJoinQuery;
 }
 
-function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 'datetime'): any {
+function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'number_array'): any {
     // Cast the provided value (string) into a valid SQL value based on the value_type
     // Return undefined if the value cannot be cast
     switch (value_type) {
@@ -30,6 +30,15 @@ function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 
         case 'string':
             //console.log(44);
             return value;
+        case 'number_array':
+            let parsedValue = undefined;
+            try {
+                parsedValue = JSON.parse(value);
+            } catch (error) {
+                console.log('Error parsing number array:', error);
+            }
+
+            return parsedValue
         default:
             //console.log(55);
             return undefined;
@@ -46,8 +55,7 @@ function UserScopeHandler(userUPN: string, userSecGrps: string[]): string {
             Approvals.body AS Approvals_body,
             Approvals.outcome AS Approvals_outcome,
             Approvals.outcome_colour AS Approvals_outcome_colour,
-            Approvals.parent_source AS Approvals_parent_source,
-            Approvals.child_source AS Approvals_child_source,
+            Approvals.source_id AS Approvals_source_id,
             Approvals.entity_id AS Approvals_entity_id,
             Approvals.entity_name AS Approvals_entity_name,
             Approvals.entity_url AS Approvals_entity_url,
@@ -93,6 +101,19 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
                 let filterValue = CastValue(filter.value, filter.value_type);
                 if (filter.value_type === 'datetime') {
                     filterValue = `'${filter.value.split('.')[0]}'`;
+                } else if (filter.value_type === 'number_array') {
+                    if (Array.isArray(filterValue)) {
+                        let initialClause = `(`;
+                        let clauseConditions = [];
+                        filterValue.forEach((value: string, index: number) => {
+                            clauseConditions.push(`${filter.tableName}_${filter.columnName} ${filter.operator} ${value}`);
+                        });
+                        let clauseQuery = clauseConditions.join(' OR ');
+                        let finalClause = `${initialClause}${clauseQuery})`;
+                        filterValue = finalClause;//
+                    } else {
+                        continue;
+                    }
                 } else {
                     filterValue = filter.value;
                 }
@@ -101,9 +122,15 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
                     //console.log(5)
                     continue;
                 }
-                //append the fitler to the where clause array
+
+                if (filter.value_type === 'number_array') {
+                    whereClauses.push(filterValue);
+                } else {
+                    //append the fitler to the where clause array
                 whereClauses.push(`${tableName}_${filter.columnName} ${filter.operator} ${filterValue}`);
                 //console.log('Adding filter:', `${tableName}.${filter.columnName} ${filter.operator} ${filterValue}`);
+                }
+                
             }
     
             // If there are any filters, append them to the query
@@ -138,8 +165,7 @@ function InnerJoinHandler(filterQuery: string): string {
         ${tableName}.Approvals_body,
         ${tableName}.Approvals_outcome,
         ${tableName}.Approvals_outcome_colour,
-        ${tableName}.Approvals_parent_source,
-        ${tableName}.Approvals_child_source,
+        ${tableName}.Approvals_source_id,
         ${tableName}.Approvals_entity_id,
         ${tableName}.Approvals_entity_name,
         ${tableName}.Approvals_entity_url,
@@ -182,8 +208,7 @@ SELECT
     TopApprovals.Approvals_body,
     TopApprovals.Approvals_outcome,
     TopApprovals.Approvals_outcome_colour,
-    TopApprovals.Approvals_parent_source,
-    TopApprovals.Approvals_child_source,
+    TopApprovals.Approvals_source_id,
     TopApprovals.Approvals_entity_id,
     TopApprovals.Approvals_entity_name,
     TopApprovals.Approvals_entity_url,
@@ -217,8 +242,7 @@ FROM (
             Approvals.body AS Approvals_body,
             Approvals.outcome AS Approvals_outcome,
             Approvals.outcome_colour AS Approvals_outcome_colour,
-            Approvals.parent_source AS Approvals_parent_source,
-            Approvals.child_source AS Approvals_child_source,
+            Approvals.source_id AS Approvals_source_id,
             Approvals.entity_id AS Approvals_entity_id,
             Approvals.entity_name AS Approvals_entity_name,
             Approvals.entity_url AS Approvals_entity_url,

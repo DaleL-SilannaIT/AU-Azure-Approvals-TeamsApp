@@ -6,8 +6,7 @@ export interface ApprovalRecordSet {
     Approvals_body: string;
     Approvals_outcome: string;
     Approvals_outcome_colour: string;
-    Approvals_parent_source: string;
-    Approvals_child_source: string;
+    Approvals_source_id: string;
     Approvals_entity_id: number;
     Approvals_entity_name: string;
     Approvals_entity_url: string;

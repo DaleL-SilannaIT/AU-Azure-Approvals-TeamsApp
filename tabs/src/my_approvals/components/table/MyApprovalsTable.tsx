@@ -16,6 +16,47 @@ import { fetchUserPresence } from '../../services/userPresence';
 import { IMyApprovalTableState, IApproval, IGroup, IUser, IMyApprovalsTableProps, IUserPresence, IDecodedToken} from '../../services/Interfaces';
 import { fetchData } from '../../services/fetchData';
 
+const MemoizedFacepile = React.memo(({ 
+  item, 
+  photos, 
+  presence, 
+  overflowButtonProps 
+}: { 
+  item: IApproval;
+  photos: { [upn: string]: string | undefined };
+  presence: { [objectId: string]: PersonaPresence };
+  overflowButtonProps: any;
+}) => {
+  return (
+    <Facepile
+      personas={item.approval_members}
+      maxDisplayablePersonas={3}
+      overflowButtonType={OverflowButtonType.descriptive}
+      overflowButtonProps={overflowButtonProps}
+      personaSize={PersonaSize.size32}
+      getPersonaProps={(persona: IFacepilePersona) => ({
+        text: persona.personaName,
+        secondaryText: persona.data.upn as string,
+        size: PersonaSize.size32,
+        presence: presence[persona.data.objectId as string] || PersonaPresence.none,
+        imageShouldFadeIn: true,
+        imageUrl: photos[persona.data.upn as string],
+        initialsColor: persona.initialsColor,
+        imageInitials: !photos[persona.data.upn as string] ? 
+          persona.personaName?.split(' ').map((name: string) => name[0]).join('') : 
+          undefined,
+      })}
+    />
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison function to determine if re-render is needed
+  return (
+    prevProps.photos === nextProps.photos && 
+    prevProps.presence === nextProps.presence &&
+    prevProps.item.approval_members === nextProps.item.approval_members
+  );
+});
+
 export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IMyApprovalTableState> {
   private _selection: Selection;
   private userId: string | undefined;
@@ -64,29 +105,16 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       {
         key: 'Approval_members',
         name: 'Approval Members',
-        fieldName: 'approval_members',  // Changed to match ApprovalRecord interface
+        fieldName: 'approval_members',
         minWidth: 100,
         maxWidth: 200,
         isResizable: true,
         onRender: (item: IApproval) => (
-          <Facepile
-            personas={item.approval_members}
-            maxDisplayablePersonas={3}
-            overflowButtonType={OverflowButtonType.descriptive}
+          <MemoizedFacepile
+            item={item}
+            photos={this.state.photos}
+            presence={this.state.presence}
             overflowButtonProps={overflowButtonProps}
-            personaSize={PersonaSize.size32}
-            ariaDescription={'To move through the items use left and right arrow keys.'}
-            ariaLabel={'Example list of Facepile personas'}
-            getPersonaProps={(persona: IFacepilePersona) => ({
-              text: persona.personaName,
-              secondaryText: persona.data.upn as string,
-              size: PersonaSize.size32,
-              presence: this.state.presence[persona.data.objectId as string] || PersonaPresence.offline,
-              imageShouldFadeIn: true,
-              imageUrl: this.state.photos[persona.data.upn as string],
-              initialsColor: persona.initialsColor,
-              imageInitials: persona.personaName ? persona.personaName.split(' ').map((name: string) => name[0]).join('') : '',
-            })}
           />
         )
       },
@@ -217,12 +245,16 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   
       console.log(`Found ${distinctUserIds.size} distinct users`);
   
+      // Track updates to trigger a single re-render
+      let hasUpdates = false;
+  
       // Batch fetch presence for all distinct users
       if (distinctUserIds.size > 0) {
         console.log('Fetching presence for distinct users:', Array.from(distinctUserIds));
         const presenceMap = await fetchUserPresence(Array.from(distinctUserIds), this.props.userToken);
         
         if (presenceMap.size > 0) {
+          hasUpdates = true;
           this.setState(prevState => ({
             presence: {
               ...prevState.presence,
@@ -244,6 +276,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       const photoResults = await Promise.all(photoPromises);
       const newPhotos = photoResults.reduce((acc, result) => {
         if (result && result.photoUrl) {
+          hasUpdates = true;
           acc[result.upn] = result.photoUrl;
         }
         return acc;

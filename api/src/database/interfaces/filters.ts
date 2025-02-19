@@ -4,21 +4,21 @@ import type { ApprovalUser } from './approvalUser';
 
 export interface ApprovalRecordFilters {
     columnName: keyof ApprovalRecord,
-    operator: '=' | '!=' | '>' | '<' | '>=' | '<=',
+    operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN',
     value: string,
-    value_type: 'number' | 'string' | 'boolean' | 'datetime'
+    value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'number_array'
 }
 
 export interface ApprovalGroupFilters {
     columnName: keyof ApprovalGroup,
-    operator: '=' | '!=' | '>' | '<' | '>=' | '<=',
+    operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE',
     value: string,
     value_type: 'number' | 'string' | 'boolean'
 }
 
 export interface ApprovalUserFilters {
     columnName: keyof ApprovalUser,
-    operator: '=' | '!=' | '>' | '<' | '>=' | '<=',
+    operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE',
     value: string,
     value_type: 'number' | 'string' | 'boolean' | 'datetime'
 }

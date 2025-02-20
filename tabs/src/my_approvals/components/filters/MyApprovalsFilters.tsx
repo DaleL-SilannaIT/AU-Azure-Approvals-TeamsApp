@@ -1,5 +1,4 @@
-import { defaultDatePickerStrings, mergeStyleSets, DatePicker as FluentDatePicker, SpinButton, ISpinButtonStyles, Position, DefaultButton, PrimaryButton, IconButton, Panel, TextField, Dropdown } from '@fluentui/react';
-import { onFormatDate, onParseDateFromString } from './controls/DatePicker';
+import { defaultDatePickerStrings, mergeStyleSets, DatePicker as FluentDatePicker, SpinButton, ISpinButtonStyles, Position, DefaultButton, PrimaryButton, IconButton, Panel, TextField, Dropdown, Toggle, TooltipHost } from '@fluentui/react';
 import { useState, useCallback, useEffect } from 'react';
 import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../../../../../api/src/database/interfaces/filters';
 import { ApprovalRecord } from '../../../../../api/src/database/interfaces/approvalRecord';
@@ -7,25 +6,25 @@ import { ApprovalGroup } from '../../../../../api/src/database/interfaces/approv
 import { ApprovalUser } from '../../../../../api/src/database/interfaces/approvalUser';
 import { DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 import { SourceDropdown } from './controls/SourceDropdown';
+import { AdvancedFiltersToggle } from './controls/AdvancedFiltersToggle';
 
 interface MyApprovalsFiltersProps {
   filters: ApprovalFilters;
   onApplyFilters: (filters: ApprovalFilters) => void;
 }
 
-
-
 export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   filters,
   onApplyFilters
 }) => {
+  const [advancedFilters, setAdvancedFilters] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [idFilter, setIdFilter] = useState<string>('');
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
   const [title, setTitle] = useState<string>('');
   const [subject, setSubject] = useState<string>('');
-  const [outcome, setOutcome] = useState<string>('');
+  const [outcome, setOutcome] = useState<string[]>([]);
   const [entityName, setEntityName] = useState<string>('');
   const [requesters, setRequesters] = useState<string[]>([]);
   const [approvers, setApprovers] = useState<string[]>([]);
@@ -37,6 +36,13 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   const [entityId, setEntityId] = useState<string>('');
   const [sourceDropdownSelectedKeys, setSourceDropdownSelectedKeys] = useState<string[]>([]);
 
+  const outcomeDropDownOptions = [
+    { key: 'pending', text: 'Pending' },
+    { key: 'approved', text: 'Approved' },
+    { key: 'rejected', text: 'Rejected' },
+    { key: 'cancelled', text: 'Cancelled' },
+    { key: 'cancelledBySystem', text: 'Cancelled by System' }
+  ];
 
   const updateFilters = useCallback((): ApprovalFilters => {
     const newFilters: ApprovalFilters = {
@@ -99,8 +105,8 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     if (outcome) {
       newFilters.approvalRecordFilters.push({
         columnName: 'outcome',
-        operator: 'LIKE',
-        value: `'%${outcome}%'`,
+        operator: 'IN',
+        value: `('${outcome.join('\',\'')}')`,
         value_type: 'string'
       });
     }
@@ -176,7 +182,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     setToDate(undefined);
     setTitle('');
     setSubject('');
-    setOutcome('');
+    setOutcome([]);
     setEntityName('');
     setEntityId('');
     setActive(undefined);
@@ -197,8 +203,6 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     });
   }, [onApplyFilters]);
 
-
-
   return (
     <div>
       <IconButton
@@ -206,6 +210,10 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
         onClick={() => setIsOpen(true)}
       />
       <Panel isOpen={isOpen} onDismiss={() => setIsOpen(false)} isLightDismiss={true}>
+        <AdvancedFiltersToggle
+          advancedFilters={advancedFilters}
+          setAdvancedFilters={setAdvancedFilters}
+        />
         <SpinButton
           label="Id"
           labelPosition={Position.top}
@@ -222,10 +230,21 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
           value={subject}
           onChange={(e, subject) => setSubject(subject || '')}
         />
-        <TextField
+        <Dropdown
           label="Outcome"
-          value={outcome}
-          onChange={(e, outcome) => setOutcome(outcome || '')}
+          placeholder="Select outcome"
+          selectedKeys={outcome}
+          multiSelect
+          options={outcomeDropDownOptions}
+          onChange={(e: React.FormEvent<HTMLDivElement>, option?: IDropdownOption): void => {
+            if (option) {
+              setOutcome(
+                option.selected 
+                  ? [...outcome, option.key as string] 
+                  : outcome.filter(key => key !== option.key)
+              );
+            }
+          }}
         />
         <SourceDropdown
           sourceDropdownSelectedKeys={sourceDropdownSelectedKeys}
@@ -236,8 +255,6 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
           value={entityName}
           onChange={(e, entityName) => setEntityName(entityName || '')}
         />
-
-
         <FluentDatePicker
           label="From"
           value={fromDate}
@@ -248,8 +265,6 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
           value={toDate}
           onSelectDate={(date) => setToDate(date || undefined)}
         />
-
-
         {/* Buttons to apply and clear */}
         <DefaultButton onClick={clearFilters} >
           Clear

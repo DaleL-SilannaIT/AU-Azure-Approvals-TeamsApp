@@ -3,7 +3,7 @@ import sql from 'mssql';
 import { dbConfig } from '../database/dbConfig';
 import { ApprovalRecord } from '../database/interfaces/approvalRecord';
 import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../database/interfaces/filters';
-import { FilterQueryBuilder } from "../database/filterQueryBuilder";
+import { ApprovalSourceQueryBuilder } from "../database/approvalSourceQueryBuilder";
 import {verifyJWT} from "../security/verifyJWT";
 import getSecGrps from "../security/getSecGrps";
 
@@ -13,11 +13,11 @@ import getSecGrps from "../security/getSecGrps";
  */
 
 
-export async function data(
+export async function approvalSources(
   req: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  context.log("HTTP trigger function processed a request.");
+  context.log("HTTP trigger function processed a request - approvalSources");
 
   const token = req.headers.get('token');
 
@@ -35,50 +35,13 @@ export async function data(
   //console.log('User security groups:', secGrps); // Debugging log
 
   let poolConnection: sql.ConnectionPool | null = null;
-  context.log("Starting function execution");
+  console.log("Starting function execution - approvalSources");
 
   try {
     context.log("Connecting to database");
     poolConnection = await sql.connect(dbConfig);
 
-    // Parse form-data parameters
-    const params = await req.formData();
-    //console.log("Form data parameters:", params);
-    const sortField = params.get('sortField') as keyof ApprovalRecord | undefined;
-    const sortOrder = params.get('sortOrder') === 'desc' ? 'DESC' : 'ASC';
-    const topCount = params.get('topCount') ? parseInt(params.get('topCount') as string) : 50;
-    const skipCount = params.get('skipCount') ? parseInt(params.get('skipCount') as string) : 0;
-    let approvalRecordFilters = [];
-    let approvalGroupFilters = [];
-    let approvalUserFilters = [];
-
-    // try {
-    //   let temp = JSON.parse(params.get('approvalRecordFilters') as string);
-    //   temp.forEach((element: any) => {
-    //     console.log('element:', element);
-    //   });
-    //   //console.log('approvalRecordFilters:', JSON.parse(params.get('approvalRecordFilters') as string));
-    //   approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
-    // } catch (err) {
-    //   console.error("Invalid record filter data:", err);
-    // }
-
-    try {
-      //console.log('approvalRecordFilters:', params.get('approvalRecordFilters'));
-      approvalRecordFilters = JSON.parse(params.get('approvalRecordFilters') as string) as ApprovalRecordFilters[];
-      
-    } catch (err) {
-      console.error("Invalid filter data:", err);
-      return {
-        status: 400,
-        jsonBody: { error: 'Invalid filter data' }
-      };
-    }
-
-    const approvalFilters: ApprovalFilters = { approvalRecordFilters, approvalGroupFilters, approvalUserFilters, topCount, sortField, sortOrder, skipCount };
-    let query = `SELECT TOP 50 * FROM Approvals`;
-    //console.log("Initial query:", query);
-    query = await FilterQueryBuilder(approvalFilters,claims.payload.upn,secGrps);
+    let query = await ApprovalSourceQueryBuilder();
     //console.log("Constructed query:", query);
 
     const resultSet = await poolConnection.request().query(query);
@@ -90,7 +53,6 @@ export async function data(
 
     return {
       status: 200,
-      //jsonBody: resultSet.recordset
       jsonBody: resultSet.recordset
     };
   } catch (err) {
@@ -111,8 +73,8 @@ export async function data(
   }
 }
 
-app.http("data", {
-  methods: ["POST"],
+app.http("approvalSources", {
+  methods: ["GET"],
   authLevel: "anonymous",
-  handler: data,
+  handler: approvalSources,
 });

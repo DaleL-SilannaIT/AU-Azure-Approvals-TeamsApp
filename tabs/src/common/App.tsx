@@ -39,7 +39,7 @@ export default function App() {
 
       const token = await teamsUserCredential.getToken(["User.Read"]);
       if (token) {
-        console.log('Token retrieved successfully');
+        //console.log('Token retrieved successfully', token.token);
         setUserToken(token.token);
       } else {
         console.log('No token returned');
@@ -54,50 +54,14 @@ export default function App() {
     }
   };
 
+
   // const fetchAccessToken = async () => {
-  //   console.log('fetchAccessToken called');
-  //   try {
-  //     const url = `/oauth2/v2.0/token`;
-  //     console.log('Fetching access token from URL:', url);
+  //   const response = await fetch(`${endpoint}/api/userPhoto?upn=dalel@silanna.com`, {
+  //   })
 
-  //     const response = await fetch(url, {
-  //       method: 'POST',
-  //       headers: { 
-  //         'Content-Type': 'application/x-www-form-urlencoded',
-  //         'Accept': 'application/json'
-  //       },
-  //       body: new URLSearchParams({
-  //         client_id: '56111f7a-a53e-4939-85ce-bcb647af03ed',
-  //         scope: 'https://graph.microsoft.com/.default',
-  //         client_secret: 'iIE8Q~qvQTA5c9ahROt-nDMSzJItwR6ly~tmTatg',
-  //         grant_type: 'client_credentials'
-  //       }).toString()
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
-
-  //     const data = await response.json();
-  //     console.log("Access token retrieved successfully");
-  //     setAccessToken(data.access_token);
-  //   } catch (err) {
-  //     console.error('Error fetching access token:', err);
-  //     if (err instanceof Error) {
-  //       setError(err.message);
-  //     } else {
-  //       setError('An unknown error occurred while fetching access token');
-  //     }
-  //   }
+  //   const data = await response;
+  //   console.log('User photo', data);
   // }
-
-  const fetchAccessToken = async () => {
-    const response = await fetch(`${endpoint}/api/userPhoto?upn=dalel@silanna.com`, {
-    })
-
-    const data = await response;
-    console.log('User photo', data);
-  }
 
   useEffect(() => {
     if (teamsUserCredential) {
@@ -106,7 +70,7 @@ export default function App() {
       console.log('REACT_APP_AAD_APP_CLIENT_ID:', process.env.REACT_APP_AAD_APP_CLIENT_ID);
       console.log('REACT_APP_AAD_APP_CLIENT_SECRET:', process.env.REACT_APP_AAD_APP_CLIENT_SECRET);
       initialiseUserToken();
-      fetchAccessToken();
+      //fetchAccessToken();
     } else {
       console.log('teamsUserCredential is not available');
     }

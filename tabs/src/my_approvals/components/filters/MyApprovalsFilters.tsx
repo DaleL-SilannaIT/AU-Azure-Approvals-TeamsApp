@@ -11,11 +11,13 @@ import { AdvancedFiltersToggle } from './controls/AdvancedFiltersToggle';
 interface MyApprovalsFiltersProps {
   filters: ApprovalFilters;
   onApplyFilters: (filters: ApprovalFilters) => void;
+  userToken: string;
 }
 
 export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   filters,
-  onApplyFilters
+  onApplyFilters,
+  userToken
 }) => {
   const [advancedFilters, setAdvancedFilters] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -249,6 +251,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
         <SourceDropdown
           sourceDropdownSelectedKeys={sourceDropdownSelectedKeys}
           setSourceDropdownSelectedKeys={setSourceDropdownSelectedKeys}
+          userToken={userToken}
         />
         <TextField
           label="Entity Name"

@@ -307,6 +307,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
           <MyApprovalsFilters
             filters={filters}
             onApplyFilters={setFilters}
+            userToken={this.props.userToken || ''}
           />
         </div>
         {error && <div className="error">{error}</div>}

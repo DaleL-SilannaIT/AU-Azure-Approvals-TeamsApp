@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Dropdown, DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 import axios from 'axios';
+
 const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
+
 interface ISourceDropdownProps {
     sourceDropdownSelectedKeys: string[];
     setSourceDropdownSelectedKeys: (state: string[]) => void;
@@ -17,13 +19,6 @@ interface ISource {
     Child_Approval_Sources_url: string;
 }
 
-interface IGroupedSource {
-    Parent_Approval_Sources_id: number;
-    Child_Sources: ISource[];
-}
-
-const sourceDropdownStyles: Partial<IDropdownStyles> = { dropdown: { width: 300 } };
-
 export const SourceDropdown: React.FunctionComponent<ISourceDropdownProps> = ({
     sourceDropdownSelectedKeys,
     setSourceDropdownSelectedKeys,
@@ -34,23 +29,43 @@ export const SourceDropdown: React.FunctionComponent<ISourceDropdownProps> = ({
     useEffect(() => {
         const fetchApprovalSources = async () => {
             try {
-                console.log(endpoint)
-                const response = await fetch(`${endpoint}/api/approvalSources`, {
-                    headers: {token: userToken}
+                const response = await axios.get(`${endpoint}/api/approvalSources`, {
+                    headers: { token: userToken }
                 });
-                const data = await response.json();
-                const sources = data.map((source: ISource) => ({
-                    key: source.Child_Approval_Sources_id,
-                    text: source.Child_Approval_Sources_display_name
-                }));
-                setSourceDropdownOptions(sources);
+                const data = response.data;
+
+                const groupedSources = data.reduce((acc: any, source: ISource) => {
+                    const parentId = source.Parent_Approval_Sources_id;
+                    if (!acc[parentId]) {
+                        acc[parentId] = {
+                            key: `header_${parentId}`,
+                            text: source.Parent_Approval_Sources_display_name,
+                            itemType: DropdownMenuItemType.Header,
+                            children: []
+                        };
+                    }
+                    acc[parentId].children.push({
+                        key: source.Child_Approval_Sources_id,
+                        text: source.Child_Approval_Sources_display_name
+                    });
+                    return acc;
+                }, {});
+
+                const options: IDropdownOption[] = [];
+                Object.values(groupedSources).forEach((group: any) => {
+                    options.push(group);
+                    options.push(...group.children);
+                    options.push({ key: `divider_${group.key}`, text: '-', itemType: DropdownMenuItemType.Divider });
+                });
+
+                setSourceDropdownOptions(options);
             } catch (error) {
                 console.error('Error fetching approval sources:', error);
             }
         };
 
         fetchApprovalSources();
-    }, []);
+    }, [userToken]);
 
     const onSourceDropdownChange = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption): void => {
         if (option) {
@@ -69,7 +84,6 @@ export const SourceDropdown: React.FunctionComponent<ISourceDropdownProps> = ({
             selectedKeys={sourceDropdownSelectedKeys}
             multiSelect
             options={sourceDropdownOptions}
-            styles={sourceDropdownStyles}
             onChange={onSourceDropdownChange}
         />
     );

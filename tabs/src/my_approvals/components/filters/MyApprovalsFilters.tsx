@@ -1,24 +1,35 @@
-import { defaultDatePickerStrings, mergeStyleSets, DatePicker as FluentDatePicker, SpinButton, ISpinButtonStyles, Position, DefaultButton, PrimaryButton, IconButton, Panel, TextField, Dropdown, Toggle, TooltipHost } from '@fluentui/react';
-import { useState, useCallback, useEffect } from 'react';
-import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../../../../../api/src/database/interfaces/filters';
+import React, { useState, useCallback } from 'react';
+import { DefaultButton, PrimaryButton, IconButton, Panel, TextField, Dropdown, SpinButton, Position, DatePicker as FluentDatePicker } from '@fluentui/react';
+import { ApprovalFilters } from '../../../../../api/src/database/interfaces/filters';
+import { SourceDropdown } from './controls/SourceDropdown';
+import { RequestersDropdown } from './controls/RequestersDropdown';
+import { ApproversDropdown } from './controls/ApproversDropdown';
+import { AdvancedFiltersToggle } from './controls/AdvancedFiltersToggle';
+import { IRequester, IApprover } from '../../services/Interfaces';
 import { ApprovalRecord } from '../../../../../api/src/database/interfaces/approvalRecord';
 import { ApprovalGroup } from '../../../../../api/src/database/interfaces/approvalGroup';
 import { ApprovalUser } from '../../../../../api/src/database/interfaces/approvalUser';
 import { DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
-import { SourceDropdown } from './controls/SourceDropdown';
-import { AdvancedFiltersToggle } from './controls/AdvancedFiltersToggle';
+
 
 interface MyApprovalsFiltersProps {
   filters: ApprovalFilters;
   onApplyFilters: (filters: ApprovalFilters) => void;
   userToken: string;
+  requesters: IRequester[];
+  approvers: IApprover[];
 }
 
 export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   filters,
   onApplyFilters,
-  userToken
+  userToken,
+  requesters,
+  approvers
 }) => {
+  console.log('Requesters in MyApprovalsFilters:', requesters);
+  console.log('Approvers in MyApprovalsFilters:', approvers);
+
   const [advancedFilters, setAdvancedFilters] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [idFilter, setIdFilter] = useState<string>('');
@@ -28,8 +39,6 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   const [subject, setSubject] = useState<string>('');
   const [outcome, setOutcome] = useState<string[]>([]);
   const [entityName, setEntityName] = useState<string>('');
-  const [requesters, setRequesters] = useState<string[]>([]);
-  const [approvers, setApprovers] = useState<string[]>([]);
   const [active, setActive] = useState<boolean | undefined>(undefined);
   const [hasNotes, setHasNotes] = useState<boolean | undefined>(undefined);
   const [hasAttachments, setHasAttachments] = useState<boolean | undefined>(undefined);
@@ -37,6 +46,8 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   const [childSource, setChildSource] = useState<string>('');
   const [entityId, setEntityId] = useState<string>('');
   const [sourceDropdownSelectedKeys, setSourceDropdownSelectedKeys] = useState<string[]>([]);
+  const [requestersDropdownSelectedKeys, setRequestersDropdownSelectedKeys] = useState<string[]>([]);
+  const [approversDropdownSelectedKeys, setApproversDropdownSelectedKeys] = useState<string[]>([]);
 
   const outcomeDropDownOptions = [
     { key: 'pending', text: 'Pending' },
@@ -104,7 +115,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
       });
     }
 
-    if (outcome) {
+    if (outcome && outcome.length > 0) {
       newFilters.approvalRecordFilters.push({
         columnName: 'outcome',
         operator: 'IN',
@@ -163,13 +174,49 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
       newFilters.approvalRecordFilters.push({
         columnName: 'source_id',
         operator: '=',
-        value: sourceDropdownSelectedKeys.join(','),
+        value: `[${sourceDropdownSelectedKeys.join(',')}]`,
         value_type: 'number_array'
       });
     }
 
+    if (requestersDropdownSelectedKeys.length > 0) {
+      newFilters.approvalUserFilters.push({
+        columnName: 'object_id',
+        operator: '=',
+        value: `[${requestersDropdownSelectedKeys.join(',')}]`,
+        value_type: 'string_array'
+      });
+    }
+
+    if (approversDropdownSelectedKeys.length > 0) {
+      newFilters.approvalUserFilters.push({
+        columnName: 'object_id',
+        operator: '=',
+        value: `[${approversDropdownSelectedKeys.join(',')}]`,
+        value_type: 'string_array'
+      });
+    }
+
     return newFilters;
-  }, [idFilter, fromDate, toDate, title, subject, outcome, entityName, entityId, active, hasNotes, hasAttachments, parentSource, childSource, sourceDropdownSelectedKeys]);
+  }, [
+      idFilter, 
+      fromDate, 
+      toDate, 
+      title, 
+      subject, 
+      outcome, 
+      entityName, 
+      entityId, 
+      active, 
+      hasNotes, 
+      hasAttachments, 
+      parentSource, 
+      childSource, 
+      sourceDropdownSelectedKeys,
+      requestersDropdownSelectedKeys,
+      approversDropdownSelectedKeys
+    ]
+  );
 
   const applyFilters = useCallback(() => {
     const newFilters = updateFilters();
@@ -192,7 +239,9 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     setHasAttachments(undefined);
     setParentSource('');
     setChildSource('');
-    setSourceDropdownSelectedKeys([]); // Add this line
+    setSourceDropdownSelectedKeys([]);
+    setRequestersDropdownSelectedKeys([]);
+    setApproversDropdownSelectedKeys([]);
 
     onApplyFilters({
       sortField: 'id',
@@ -268,6 +317,19 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
           value={toDate}
           onSelectDate={(date) => setToDate(date || undefined)}
         />
+        <RequestersDropdown
+          requesterSelectedKeys={requestersDropdownSelectedKeys}
+          setRequesterSelectedKeys={setRequestersDropdownSelectedKeys}
+          userToken={userToken}
+          requesters={requesters}
+        />
+        <ApproversDropdown
+          approversSelectedKeys={approversDropdownSelectedKeys}
+          setApproversSelectedKeys={setApproversDropdownSelectedKeys}
+          userToken={userToken}
+          approvers={approvers}
+        />
+
         {/* Buttons to apply and clear */}
         <DefaultButton onClick={clearFilters} >
           Clear

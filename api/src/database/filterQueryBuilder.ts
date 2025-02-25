@@ -10,7 +10,7 @@ export async function FilterQueryBuilder(filters: ApprovalFilters, userUPN: stri
     return innerJoinQuery;
 }
 
-function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'number_array'): any {
+function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'number_array' | 'string_array'): any {
     // Cast the provided value (string) into a valid SQL value based on the value_type
     // Return undefined if the value cannot be cast
     switch (value_type) {
@@ -85,19 +85,16 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
     let tableName = 'Approvals';
     let filterQuery = 
     `SELECT * FROM (${userQuery}) AS ${tableName}`
-    //console.log('recieved filters:', filters);
-    //parese filters here and append them to query string
     let whereClauses: string[] = [];
-    //console.log(1)
-    //Loop through all keys in the filter object that are of type array and concatenate the filters the filter objects inside each array to form the filter query
+
     Object.keys(filters).forEach(key => {
-        //console.log(2)
-        // filters out non array keys (e.g. sortField, sortOrder, topCount, skipCount)
         if (Array.isArray(filters[key])) {
-            //console.log(3)
-            // Loop through each filter object and append the filter to the query
             for (const filter of filters[key]) {
-                //console.log(4, filter)
+                if (!tableName || !filter.columnName) {
+                    console.log('Invalid filter:', filter);
+                    continue;
+                }
+
                 let filterValue = CastValue(filter.value, filter.value_type);
                 if (filter.value_type === 'datetime') {
                     filterValue = `'${filter.value.split('.')[0]}'`;
@@ -106,45 +103,37 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
                         let initialClause = `(`;
                         let clauseConditions = [];
                         filterValue.forEach((value: string, index: number) => {
-                            clauseConditions.push(`${filter.tableName}_${filter.columnName} ${filter.operator} ${value}`);
+                            clauseConditions.push(`${tableName}_${filter.columnName} ${filter.operator} ${value}`);
                         });
                         let clauseQuery = clauseConditions.join(' OR ');
                         let finalClause = `${initialClause}${clauseQuery})`;
-                        filterValue = finalClause;//
+                        filterValue = finalClause;
                     } else {
                         continue;
                     }
                 } else {
                     filterValue = filter.value;
                 }
-                // if the filter is invalid, skip it and move to the next one
+
                 if (filter.value === undefined) {
-                    //console.log(5)
                     continue;
                 }
 
                 if (filter.value_type === 'number_array') {
                     whereClauses.push(filterValue);
                 } else {
-                    //append the fitler to the where clause array
-                whereClauses.push(`${tableName}_${filter.columnName} ${filter.operator} ${filterValue}`);
-                //console.log('Adding filter:', `${tableName}.${filter.columnName} ${filter.operator} ${filterValue}`);
+                    whereClauses.push(`${filter.tableName}_${filter.columnName} ${filter.operator} ${filterValue}`);
                 }
-                
             }
-    
-            // If there are any filters, append them to the query
+
             if (whereClauses.length > 0) {
-                //console.log(6)
                 filterQuery += ' WHERE ' + whereClauses.join(' AND ');
             }
 
-            // Reset whereClauses array
             whereClauses = [];
         }
     });
-    
-    // This query builder handles sorting and pagination
+
     filterQuery += 
     ` ORDER BY ${tableName}.Approvals_id
     OFFSET ${filters.skipCount} ROWS 
@@ -262,5 +251,4 @@ FROM (
     FETCH NEXT 2 ROWS ONLY
 ) AS TopApprovals 
 INNER JOIN Approval_Groups ON TopApprovals.Approvals_id = Approval_Groups.approval_id
-INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id
-*/
+INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id*/

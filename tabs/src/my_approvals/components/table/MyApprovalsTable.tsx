@@ -11,10 +11,14 @@ import { MyApprovalsFilters } from '../filters/MyApprovalsFilters';
 import { ShimmeredDetailsList } from '@fluentui/react';
 import { Facepile, OverflowButtonType, IFacepilePersona } from '@fluentui/react/lib/Facepile';
 import { PersonaPresence, PersonaSize } from '@fluentui/react/lib/Persona';
-import { fetchPhotosForApproval, fetchUserPhoto} from '../../services/userPhotos';
+import { fetchPhotosForApproval, fetchUserPhoto } from '../../services/userPhotos';
 import { fetchUserPresence } from '../../services/userPresence';
-import { IMyApprovalTableState, IApproval, IGroup, IUser, IMyApprovalsTableProps, IUserPresence, IDecodedToken} from '../../services/Interfaces';
+import { IMyApprovalTableState, IApproval, IGroup, IUser, IMyApprovalsTableProps, IUserPresence, IDecodedToken } from '../../services/Interfaces';
 import { fetchData } from '../../services/fetchData';
+import { IApprover, IRequester } from '../../services/Interfaces';
+import axios from 'axios';
+
+const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
 
 const MemoizedFacepile = React.memo(({ 
   item, 
@@ -60,10 +64,10 @@ const MemoizedFacepile = React.memo(({
 export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IMyApprovalTableState> {
   private _selection: Selection;
   private userId: string | undefined;
-
+  
   constructor(props: IMyApprovalsTableProps) {
     super(props);
-
+    
     // Decode the user token to extract the user ID
     if (props.userToken) {
       const decodedToken: any = jwtDecode(props.userToken);
@@ -137,12 +141,15 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       loading: false,
       error: null,
       photos: {}, // Add this line
-      presence: {}
+      presence: {},
+      requesters: [],
+      approvers: []
     };
   }
 
   componentDidMount() {
     this.handleFetchData(this.props.filters);
+    this.fetchRequestersAndApprovers();
   }
 
   componentDidUpdate(prevProps: IMyApprovalsTableProps, prevState: IMyApprovalTableState) {
@@ -173,6 +180,25 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       }
     });
   };
+
+  private fetchRequestersAndApprovers = async () => {
+    if (!this.props.userToken) return;
+
+    try {
+        console.log('Fetching requesters and approvers...');
+        const [requestersResponse, approversResponse] = await Promise.all([
+            axios.get(`${endpoint}/api/requesters`, { headers: { token: this.props.userToken } }),
+            axios.get(`${endpoint}/api/approvers`, { headers: { token: this.props.userToken } })
+        ]);
+
+        const requesters = requestersResponse.data;
+        const approvers = approversResponse.data;
+
+        this.setState({ requesters, approvers });
+    } catch (error) {
+        console.error('Error fetching requesters and approvers:', error);
+    }
+};
 
   private onRenderItemColumn = (item?: IApproval, index?: number, column?: IColumn): React.ReactNode => {
     if (!item || !column?.key) {
@@ -218,7 +244,6 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     // Return the field value as string for primitive types
     return String(fieldValue);
   };
-
 
   private async updateUserProfiles(approvals: IApproval[]): Promise<void> {
     if (!this.props.accessToken || !this.props.userToken) {
@@ -298,7 +323,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   
 
   public render() {
-    const { columns, isCompactMode, items, selectionDetails, isModalSelection, loading, error } = this.state;
+    const { columns, isCompactMode, items, selectionDetails, isModalSelection, loading, error, requesters, approvers } = this.state;
     const { filters, setFilters } = this.props;
 
     return (
@@ -308,6 +333,8 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
             filters={filters}
             onApplyFilters={setFilters}
             userToken={this.props.userToken || ''}
+            requesters={requesters}
+            approvers={approvers}
           />
         </div>
         {error && <div className="error">{error}</div>}

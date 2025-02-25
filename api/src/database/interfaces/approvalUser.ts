@@ -11,4 +11,5 @@ export interface ApprovalUser {
     time_zone_offset: number;
     reminder_count: number;
     response_datetime: string;
+    object_id: string;
   }

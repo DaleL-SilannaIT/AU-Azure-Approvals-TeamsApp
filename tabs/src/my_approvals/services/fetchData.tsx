@@ -72,7 +72,7 @@ export async function fetchData({ userToken, filters, onStateUpdate }: FetchData
     console.log('Fetched data:', data); // Debug log
 
     const formattedData = restructureData(data, userToken);
-    console.log('Formatted data:', formattedData);
+    //console.log('Formatted data:', formattedData);
 
     // Update table data immediately
     onStateUpdate({ 

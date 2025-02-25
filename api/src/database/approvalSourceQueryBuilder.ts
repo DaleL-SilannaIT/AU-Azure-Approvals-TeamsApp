@@ -1,6 +1,6 @@
 import { ApprovalFilters } from './interfaces/filters';
 
-export async function ApprovalSourceQueryBuilder(): Promise<string> {
+export function ApprovalSourceQueryBuilder(): string {
     return SourceHandler();
 }
 

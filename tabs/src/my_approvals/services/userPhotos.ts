@@ -80,7 +80,7 @@ export async function fetchPhotosForApproval(
 
     // Update state after each batch if we have new photos
     if (hasUpdates) {
-      console.log(`Updating photos batch ${i/batchSize + 1} with:`, newPhotos);
+      //console.log(`Updating photos batch ${i/batchSize + 1} with:`, newPhotos);
       updateState(newPhotos);
     }
   }

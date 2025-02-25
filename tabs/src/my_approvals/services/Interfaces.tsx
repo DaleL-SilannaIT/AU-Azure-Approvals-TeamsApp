@@ -14,6 +14,8 @@ export interface IMyApprovalTableState {
   error: string | null;
   photos: { [upn: string]: string | undefined };
   presence: { [objectId: string]: PersonaPresence };
+  approvers: IApprover[];
+  requesters: IRequester[];
 }
 
 export interface IApproval {
@@ -68,7 +70,35 @@ export interface IDecodedToken extends JwtPayload {
 }
 
 export interface IUserPhotoInfo {
-    upn: string;
-    objectId?: string;
-    displayName?: string;
-  }
+  upn: string;
+  objectId?: string;
+  displayName?: string;
+}
+
+export interface IRequestersDropdownProps {
+  requesterSelectedKeys: string[];
+  setRequesterSelectedKeys: (state: string[]) => void;
+  userToken: string;
+  requesters: IRequester[];
+}
+
+export interface IRequester {
+  object_id: string;
+  upn: string;
+  email: string;
+  display_name: string;
+}
+
+export interface IApproversDropdownProps {
+  approversSelectedKeys: string[];
+  setApproversSelectedKeys: (state: string[]) => void;
+  userToken: string;
+  approvers: IApprover[];
+}
+
+export interface IApprover {
+  object_id: string;
+  upn: string;
+  email: string;
+  display_name: string;
+}

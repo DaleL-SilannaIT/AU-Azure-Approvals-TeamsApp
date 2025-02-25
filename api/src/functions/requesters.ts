@@ -3,7 +3,7 @@ import sql from 'mssql';
 import { dbConfig } from '../database/dbConfig';
 import { ApprovalRecord } from '../database/interfaces/approvalRecord';
 import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../database/interfaces/filters';
-import { ApprovalSourceQueryBuilder } from "../database/approvalSourceQueryBuilder";
+import { RequestersQueryBuilder } from "../database/requestersQueryBuilder";
 import {verifyJWT} from "../security/verifyJWT";
 import getSecGrps from "../security/getSecGrps";
 
@@ -13,11 +13,11 @@ import getSecGrps from "../security/getSecGrps";
  */
 
 
-export async function approvalSources(
+export async function requesters(
   req: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  context.log("HTTP trigger function processed a request - approvalSources");
+  context.log("HTTP trigger function processed a request - requesters");
 
   const token = req.headers.get('token');
 
@@ -29,27 +29,27 @@ export async function approvalSources(
   }
 
   const claims = await verifyJWT(token);
-  //console.log('Decoded token:', claims); // Debugging log
 
   const secGrps = [] //await getSecGrps(claims?.upn);
   //console.log('User security groups:', secGrps); // Debugging log
 
   let poolConnection: sql.ConnectionPool | null = null;
-  console.log("Starting function execution - approvalSources");
+  console.log("Starting function execution - requesters");
 
   try {
     context.log("Connecting to database");
     poolConnection = await sql.connect(dbConfig);
 
-    let query = ApprovalSourceQueryBuilder();
+    let query = RequestersQueryBuilder(claims.payload.oid);
     //console.log("Constructed query:", query);
 
     const resultSet = await poolConnection.request().query(query);
-    //console.log(`${resultSet.recordset.length} rows returned.`);
 
     // Close connection only when we're certain application is finished
     poolConnection.close();
     context.log("Database connection closed");
+
+    console.log("Requesters:", resultSet.recordset);
 
     return {
       status: 200,
@@ -73,8 +73,8 @@ export async function approvalSources(
   }
 }
 
-app.http("approvalSources", {
+app.http("requesters", {
   methods: ["GET"],
   authLevel: "anonymous",
-  handler: approvalSources,
+  handler: requesters,
 });

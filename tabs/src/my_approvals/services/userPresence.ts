@@ -28,7 +28,7 @@ export async function fetchUserPresence(userObjectIds: string[], userToken: stri
       ids: userObjectIds
     };
 
-    console.log('Sending presence request with body:', requestBody);
+    //console.log('Sending presence request with body:', requestBody);
 
     const response = await fetch(`${endpoint}/api/presence`, {
       method: 'POST',
@@ -41,14 +41,14 @@ export async function fetchUserPresence(userObjectIds: string[], userToken: stri
     }
 
     const graphResponse: GraphPresenceResponse = await response.json();
-    console.log('Graph response:', graphResponse);
+    //console.log('Graph response:', graphResponse);
     
     // Extract the presence array from the value property
     const presenceData = graphResponse.value;
-    console.log('Presence data array:', presenceData);
+    //console.log('Presence data array:', presenceData);
     
     const mappedPresence = mapPresenceData(presenceData);
-    console.log('Mapped presence:', Object.fromEntries(mappedPresence));
+    //console.log('Mapped presence:', Object.fromEntries(mappedPresence));
     return mappedPresence;
   } catch (error) {
     console.error('Error fetching presence:', error);

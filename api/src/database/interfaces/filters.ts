@@ -6,21 +6,21 @@ export interface ApprovalRecordFilters {
     columnName: keyof ApprovalRecord,
     operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN',
     value: string,
-    value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'number_array'
+    value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'number_array' | 'string_array'
 }
 
 export interface ApprovalGroupFilters {
     columnName: keyof ApprovalGroup,
     operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE',
     value: string,
-    value_type: 'number' | 'string' | 'boolean'
+    value_type: 'number' | 'string' | 'boolean' | 'string_array'
 }
 
 export interface ApprovalUserFilters {
     columnName: keyof ApprovalUser,
     operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE',
     value: string,
-    value_type: 'number' | 'string' | 'boolean' | 'datetime'
+    value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'string_array'
 }
 
 export interface ApprovalFilters {

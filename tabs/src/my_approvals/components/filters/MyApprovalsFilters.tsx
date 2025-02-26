@@ -377,10 +377,10 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
         onClick={() => setIsOpen(true)}
       />
       <Panel isOpen={isOpen} onDismiss={() => setIsOpen(false)} isLightDismiss={true}>
-        <AdvancedFiltersToggle
+        {/* <AdvancedFiltersToggle
           advancedFilters={advancedFilters}
           setAdvancedFilters={setAdvancedFilters}
-        />
+        /> */}
         <SpinButton
           label="Id"
           labelPosition={Position.top}
@@ -396,6 +396,18 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
           label="Subject"
           value={subject}
           onChange={(e, subject) => setSubject(subject || '')}
+        />
+        <RequestersDropdown
+          requesterSelectedKeys={requestersDropdownSelectedKeys}
+          setRequesterSelectedKeys={setRequestersDropdownSelectedKeys}
+          userToken={userToken}
+          requesters={requesters}
+        />
+        <ApproversDropdown
+          approversSelectedKeys={approversDropdownSelectedKeys}
+          setApproversSelectedKeys={setApproversDropdownSelectedKeys}
+          userToken={userToken}
+          approvers={approvers}
         />
         <Dropdown
           label="Outcome"
@@ -432,18 +444,6 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
           label="To"
           value={toDate}
           onSelectDate={(date) => setToDate(date || undefined)}
-        />
-        <RequestersDropdown
-          requesterSelectedKeys={requestersDropdownSelectedKeys}
-          setRequesterSelectedKeys={setRequestersDropdownSelectedKeys}
-          userToken={userToken}
-          requesters={requesters}
-        />
-        <ApproversDropdown
-          approversSelectedKeys={approversDropdownSelectedKeys}
-          setApproversSelectedKeys={setApproversDropdownSelectedKeys}
-          userToken={userToken}
-          approvers={approvers}
         />
 
         {/* Buttons to apply and clear */}

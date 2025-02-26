@@ -3,7 +3,7 @@ import sql from 'mssql';
 import { dbConfig } from '../database/dbConfig';
 import { ApprovalRecord } from '../database/interfaces/approvalRecord';
 import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../database/interfaces/filters';
-import { ApproversQueryBuilder } from "../database/ApproversQueryBuilder";
+import { ApproversQueryBuilder } from "../database/approversQueryBuilder";
 import {verifyJWT} from "../security/verifyJWT";
 import getSecGrps from "../security/getSecGrps";
 

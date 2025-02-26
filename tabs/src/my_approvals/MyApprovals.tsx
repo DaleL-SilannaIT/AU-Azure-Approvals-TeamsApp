@@ -14,7 +14,22 @@ export const MyApprovals: React.FC = () => {
     skipCount: 0,
     approvalRecordFilters: [],
     approvalGroupFilters: [],
-    approvalUserFilters: []
+    approvalUserFilters: {
+      requestersFilters: {
+        tableName: 'Approval_Users',
+        columnName: 'object_id',
+        operator: '=',
+        value: '[]',
+        value_type: 'string_array'
+      },
+      approversFilters: {
+        tableName: 'Approval_Users',
+        columnName: 'object_id',
+        operator: '=',
+        value: '[]',
+        value_type: 'string_array'
+      }
+    }
   });
 
   useEffect(() => {

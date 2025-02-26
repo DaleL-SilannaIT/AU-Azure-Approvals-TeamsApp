@@ -11,7 +11,7 @@ import { ApprovalGroup } from '../../../../../api/src/database/interfaces/approv
 import { ApprovalUser } from '../../../../../api/src/database/interfaces/approvalUser';
 import { DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 
-
+const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
 interface MyApprovalsFiltersProps {
   filters: ApprovalFilters;
   onApplyFilters: (filters: ApprovalFilters) => void;
@@ -65,12 +65,28 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
       skipCount: 0,
       approvalRecordFilters: [],
       approvalGroupFilters: [],
-      approvalUserFilters: []
+      approvalUserFilters: {
+        requestersFilters: {
+          tableName: "Approval_Users",
+          columnName: 'object_id',
+          operator: '=',
+          value: '[]',
+          value_type: 'string_array'
+        },
+        approversFilters: {
+          tableName: "Approval_Users",
+          columnName: 'object_id',
+          operator: '=',
+          value: '[]',
+          value_type: 'string_array'
+        }
+      }
     };
 
     // Add ID filter if present
     if (idFilter) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'id',
         operator: '=',
         value: idFilter,
@@ -81,6 +97,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     // Add date range filters if present
     if (fromDate) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'created_datetime',
         operator: '>=',
         value: fromDate.toISOString(),
@@ -90,6 +107,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (toDate) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'created_datetime',
         operator: '<=',
         value: toDate.toISOString(),
@@ -99,6 +117,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (title) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'title',
         operator: 'LIKE',
         value: `'%${title}%'`,
@@ -108,6 +127,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (subject) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'subject',
         operator: 'LIKE',
         value: `'%${subject}%'`,
@@ -117,6 +137,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (outcome && outcome.length > 0) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'outcome',
         operator: 'IN',
         value: `('${outcome.join('\',\'')}')`,
@@ -126,6 +147,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (entityName) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'entity_name',
         operator: 'LIKE',
         value: `'%${entityName}%'`,
@@ -135,6 +157,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (entityId) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'entity_id',
         operator: '=',
         value: entityId,
@@ -144,6 +167,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (active) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'active',
         operator: '=',
         value: active.toString(),
@@ -153,6 +177,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (hasNotes) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'has_notes',
         operator: '=',
         value: hasNotes.toString(),
@@ -162,6 +187,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     if (hasAttachments) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'has_attachments',
         operator: '=',
         value: hasAttachments.toString(),
@@ -172,58 +198,102 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     // Add source filters if any are selected
     if (sourceDropdownSelectedKeys.length > 0) {
       newFilters.approvalRecordFilters.push({
+        tableName: 'Approvals',
         columnName: 'source_id',
         operator: '=',
         value: `[${sourceDropdownSelectedKeys.join(',')}]`,
-        value_type: 'number_array'
+        value_type: 'number_array',
+        join_operator: 'OR'
       });
     }
 
     if (requestersDropdownSelectedKeys.length > 0) {
-      newFilters.approvalUserFilters.push({
+      newFilters.approvalUserFilters.requestersFilters = 
+      {
+        tableName: "Approval_Users",
         columnName: 'object_id',
         operator: '=',
-        value: `[${requestersDropdownSelectedKeys.join(',')}]`,
-        value_type: 'string_array'
-      });
+        value: `["${requestersDropdownSelectedKeys.join('","')}"]`,
+        value_type: 'string_array',
+        join_operator: 'AND'
+      };
     }
 
     if (approversDropdownSelectedKeys.length > 0) {
-      newFilters.approvalUserFilters.push({
+      newFilters.approvalUserFilters.approversFilters = 
+      {
+        tableName: "Approval_Users",
         columnName: 'object_id',
         operator: '=',
-        value: `[${approversDropdownSelectedKeys.join(',')}]`,
-        value_type: 'string_array'
-      });
+        value: `["${approversDropdownSelectedKeys.join('","')}"]`,
+        value_type: 'string_array',
+        join_operator: 'AND'
+      };
     }
 
     return newFilters;
   }, [
-      idFilter, 
-      fromDate, 
-      toDate, 
-      title, 
-      subject, 
-      outcome, 
-      entityName, 
-      entityId, 
-      active, 
-      hasNotes, 
-      hasAttachments, 
-      parentSource, 
-      childSource, 
-      sourceDropdownSelectedKeys,
-      requestersDropdownSelectedKeys,
-      approversDropdownSelectedKeys
-    ]
+    idFilter,
+    fromDate,
+    toDate,
+    title,
+    subject,
+    outcome,
+    entityName,
+    entityId,
+    active,
+    hasNotes,
+    hasAttachments,
+    parentSource,
+    childSource,
+    sourceDropdownSelectedKeys,
+    requestersDropdownSelectedKeys,
+    approversDropdownSelectedKeys
+  ]
   );
 
   const applyFilters = useCallback(() => {
     const newFilters = updateFilters();
     console.log('Applying filters:', newFilters); // Debug log
-    onApplyFilters(newFilters);
-    setIsOpen(false);
-  }, [updateFilters, onApplyFilters]);
+
+    // Serialize the approvalUserFilters object
+    const serializedApprovalUserFilters = JSON.stringify(newFilters.approvalUserFilters);
+    console.log('Serialized approvalUserFilters:', serializedApprovalUserFilters);
+
+    // Create a FormData object to send the filters
+    const formData = new FormData();
+    formData.append('sortField', newFilters.sortField);
+    formData.append('sortOrder', newFilters.sortOrder);
+    formData.append('topCount', newFilters.topCount.toString());
+    formData.append('skipCount', newFilters.skipCount.toString());
+    formData.append('approvalRecordFilters', JSON.stringify(newFilters.approvalRecordFilters));
+    formData.append('approvalGroupFilters', JSON.stringify(newFilters.approvalGroupFilters));
+    formData.append('approvalUserFilters', serializedApprovalUserFilters);
+    formData.forEach((value, key) => {
+      console.log(key, value)});
+    // Send the filters to the API
+    fetch(`${endpoint}/api/data`, {
+        method: 'POST',
+        headers: {
+            'token': userToken
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => { throw new Error(text) });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('API response:', data);
+        onApplyFilters(newFilters);
+        setIsOpen(false);
+    })
+    .catch(error => {
+        console.error('Error applying filters:', error);
+    });
+}, [updateFilters, onApplyFilters, userToken]);
 
   const clearFilters = useCallback(() => {
     setIdFilter('');
@@ -243,16 +313,62 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     setRequestersDropdownSelectedKeys([]);
     setApproversDropdownSelectedKeys([]);
 
-    onApplyFilters({
+    const defaultFilters: ApprovalFilters = {
       sortField: 'id',
       sortOrder: 'DESC',
       topCount: 100,
       skipCount: 0,
       approvalRecordFilters: [],
       approvalGroupFilters: [],
-      approvalUserFilters: []
+      approvalUserFilters: {
+        requestersFilters: {
+            tableName: "Approval_Users",
+            columnName: 'object_id',
+            operator: '=',
+            value: '[]',
+            value_type: 'string_array'
+        },
+        approversFilters: {
+            tableName: "Approval_Users",
+            columnName: 'object_id',
+            operator: '=',
+            value: '[]',
+            value_type: 'string_array'
+        }
+      }
+    };
+
+    // Serialize the approvalUserFilters object
+    const serializedApprovalUserFilters = JSON.stringify(defaultFilters.approvalUserFilters);
+    console.log('Serialized approvalUserFilters:', serializedApprovalUserFilters);
+    // Create a FormData object to send the filters
+    const formData = new FormData();
+    formData.append('sortField', defaultFilters.sortField);
+    formData.append('sortOrder', defaultFilters.sortOrder);
+    formData.append('topCount', defaultFilters.topCount.toString());
+    formData.append('skipCount', defaultFilters.skipCount.toString());
+    formData.append('approvalRecordFilters', JSON.stringify(defaultFilters.approvalRecordFilters));
+    formData.append('approvalGroupFilters', JSON.stringify(defaultFilters.approvalGroupFilters));
+    formData.append('approvalUserFilters', serializedApprovalUserFilters);
+
+    
+    // Send the filters to the API
+    fetch(`${endpoint}/api/data`, {
+        method: 'POST',
+        headers: {
+            'token': userToken
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('API response:', data);
+        onApplyFilters(defaultFilters);
+    })
+    .catch(error => {
+        console.error('Error clearing filters:', error);
     });
-  }, [onApplyFilters]);
+}, [onApplyFilters, userToken]);
 
   return (
     <div>
@@ -290,8 +406,8 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
           onChange={(e: React.FormEvent<HTMLDivElement>, option?: IDropdownOption): void => {
             if (option) {
               setOutcome(
-                option.selected 
-                  ? [...outcome, option.key as string] 
+                option.selected
+                  ? [...outcome, option.key as string]
                   : outcome.filter(key => key !== option.key)
               );
             }

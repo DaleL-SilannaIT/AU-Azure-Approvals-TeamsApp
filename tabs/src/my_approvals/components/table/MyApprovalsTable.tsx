@@ -72,6 +72,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     if (props.userToken) {
       const decodedToken: any = jwtDecode(props.userToken);
       this.userId = decodedToken.oid; // Assuming the user ID is in the 'oid' claim
+      console.log(props.userToken);
     }
 
     const overflowButtonProps = {
@@ -90,7 +91,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         onRender: (item: IApproval) => (
           <img
             src={item.icon}
-            alt="Approval Icon"
+            alt="Approval Icon1"
             style={{ width: '51px', height: '51px' }}
             onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
               const target = e.target as HTMLImageElement;
@@ -182,7 +183,10 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   };
 
   private fetchRequestersAndApprovers = async () => {
-    if (!this.props.userToken) return;
+    if (!this.props.userToken) {
+      console.log("No user token available, skipping fetch requesters and approvers");
+      return
+    };
 
     try {
         console.log('Fetching requesters and approvers...');
@@ -191,8 +195,14 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
             axios.get(`${endpoint}/api/approvers`, { headers: { token: this.props.userToken } })
         ]);
 
+        console.log("Requesters response", requestersResponse.data);
+        console.log("Approvers response", approversResponse.data);
+
         const requesters = requestersResponse.data;
         const approvers = approversResponse.data;
+
+        console.log("Requesters", requesters);
+        console.log("Approvers", approvers);
 
         this.setState({ requesters, approvers });
     } catch (error) {

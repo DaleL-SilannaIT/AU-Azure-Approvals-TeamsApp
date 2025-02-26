@@ -33,7 +33,7 @@ export async function fetchData({ userToken, filters, onStateUpdate }: FetchData
 
     // Append non-array filters
     (Object.keys(filters) as (keyof ApprovalFilters)[]).forEach(key => {
-      if (!Array.isArray(filters[key])) {
+      if (!Array.isArray(filters[key]) && typeof filters[key] !== 'object') {
         formData.append(key, filters[key] as string);
         console.log(`Adding filter: ${key}=${filters[key]}`); // Debug log
       }
@@ -42,6 +42,7 @@ export async function fetchData({ userToken, filters, onStateUpdate }: FetchData
     // Append array filters as JSON strings
     formData.append('approvalRecordFilters', JSON.stringify(filters.approvalRecordFilters));
     formData.append('approvalGroupFilters', JSON.stringify(filters.approvalGroupFilters));
+    console.log('user filters length', JSON.stringify(filters.approvalUserFilters))
     formData.append('approvalUserFilters', JSON.stringify(filters.approvalUserFilters));
 
     console.log('record filters length', filters.approvalRecordFilters.length)

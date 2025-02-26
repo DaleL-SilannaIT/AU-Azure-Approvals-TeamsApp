@@ -3,24 +3,44 @@ import type { ApprovalGroup } from './approvalGroup';
 import type { ApprovalUser } from './approvalUser';
 
 export interface ApprovalRecordFilters {
+    tableName: 'Approvals'
     columnName: keyof ApprovalRecord,
     operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN',
     value: string,
     value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'number_array' | 'string_array'
+    join_operator?: 'AND' | 'OR'
 }
 
 export interface ApprovalGroupFilters {
+    tableName: 'Approval_Groups',
     columnName: keyof ApprovalGroup,
     operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE',
     value: string,
     value_type: 'number' | 'string' | 'boolean' | 'string_array'
+    join_operator?: 'AND' | 'OR'
 }
 
 export interface ApprovalUserFilters {
+    requestersFilters: ApprovalRequesterFilters;
+    approversFilters: ApprovalApproversFilters;
+}
+
+export interface ApprovalRequesterFilters {
+    tableName: string,
     columnName: keyof ApprovalUser,
     operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE',
     value: string,
     value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'string_array'
+    join_operator?: 'AND' | 'OR'
+}
+
+export interface ApprovalApproversFilters {
+    tableName: string,
+    columnName: keyof ApprovalUser,
+    operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE',
+    value: string,
+    value_type: 'number' | 'string' | 'boolean' | 'datetime' | 'string_array'
+    join_operator?: 'AND' | 'OR'
 }
 
 export interface ApprovalFilters {
@@ -29,10 +49,10 @@ export interface ApprovalFilters {
   
     approvalGroupFilters: ApprovalGroupFilters[];
   
-    approvalUserFilters: ApprovalUserFilters[];
+    approvalUserFilters: ApprovalUserFilters;
 
     topCount: number;
-    sortField: keyof ApprovalRecord | undefined;
+    sortField: keyof ApprovalRecord;
     sortOrder: 'ASC' | 'DESC';
     skipCount: number;
   }

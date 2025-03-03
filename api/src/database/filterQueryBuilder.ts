@@ -168,7 +168,7 @@ function ApprovalUserHandler(approvalUserFilters: ApprovalUserFilters): string {
                 INNER JOIN FirstApprovalGroup ON Approvals.id = FirstApprovalGroup.Approvals_id
                 INNER JOIN Approval_Groups ON FirstApprovalGroup.FirstGroup_id = Approval_Groups.id
                 INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id
-                WHERE Approval_Users.object_id = '${firstRequester}') 
+                WHERE Approval_Users.object_id = '${firstRequester}' 
                 `;
 
         nthRequesters.forEach((nRequester: any) => {
@@ -180,6 +180,8 @@ function ApprovalUserHandler(approvalUserFilters: ApprovalUserFilters): string {
                 AND AU.${approvalUserFilters.requestersFilters.columnName} = '${nRequester}'
             )`;
         });
+
+        requestersQuery += `)`;
 
         queryArray.push(requestersQuery);
     }
@@ -348,10 +350,12 @@ function InnerJoinHandler(filterQuery: string, approvalUsersQuery: string, filte
         Approval_Users.time_zone_offset AS Approval_Users_time_zone_offset,
         Approval_Users.reminder_count AS Approval_Users_reminder_count,
         Approval_Users.response_datetime AS Approval_Users_response_datetime,
-        Approval_Users.object_id AS Approval_Users_object_id
+        Approval_Users.object_id AS Approval_Users_object_id,
+        Child_Approval_Sources.display_name AS Child_Approval_Source_display_name
     FROM (${filterQuery}) AS ${tableName}
     INNER JOIN Approval_Groups ON TopApprovals.Approvals_id = Approval_Groups.approval_id
-    INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id`;
+    INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id
+    INNER JOIN child_approval_sources ON TopApprovals.Approvals_source_id = child_approval_sources.id;`;
 
     return innerJoinQuery;
 }

@@ -28,6 +28,7 @@ export interface IApproval {
   icon: string;
   groups: IGroup[];
   approval_members: IFacepilePersona[];
+  child_approval_source_display_name: string;
 }
 
 export interface IGroup {

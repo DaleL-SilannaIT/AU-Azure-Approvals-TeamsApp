@@ -61,7 +61,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     const newFilters: ApprovalFilters = {
       sortField: 'id',
       sortOrder: 'DESC',
-      topCount: 100,
+      topCount: 10,
       skipCount: 0,
       approvalRecordFilters: [],
       approvalGroupFilters: [],
@@ -316,7 +316,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     const defaultFilters: ApprovalFilters = {
       sortField: 'id',
       sortOrder: 'DESC',
-      topCount: 100,
+      topCount: 10,
       skipCount: 0,
       approvalRecordFilters: [],
       approvalGroupFilters: [],
@@ -363,6 +363,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     .then(response => response.json())
     .then(data => {
         console.log('API response:', data);
+        defaultFilters.skipCount = 0;
         onApplyFilters(defaultFilters);
     })
     .catch(error => {

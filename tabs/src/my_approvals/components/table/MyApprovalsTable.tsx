@@ -75,6 +75,9 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       console.log(props.userToken);
     }
 
+    const pagination = 10;
+    const rowsReturned = 0;
+
     const overflowButtonProps = {
       ariaLabel: 'More users',
       onClick: (ev: React.MouseEvent<HTMLButtonElement>) => alert('overflow icon clicked'),
@@ -89,6 +92,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         maxWidth: 51,
         isResizable: true,
         onRender: (item: IApproval) => (
+          console.log(item),
           <img
             src={item.icon}
             alt="Approval Icon1"
@@ -101,10 +105,19 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
           />
         )
       },
-      { key: 'Approvals_id', name: 'Id', fieldName: 'id', minWidth: 100, maxWidth: 100, isResizable: true, isSorted: true, isSortedDescending: true, sortAscendingAriaLabel: 'Sorted Small to Large', sortDescendingAriaLabel: 'Sorted Large to Small', onColumnClick: this._onColumnClick },
+      { key: 'Approvals_id', name: 'Id', fieldName: 'id', minWidth: 50, maxWidth: 50, isResizable: true, isSorted: true, isSortedDescending: true, sortAscendingAriaLabel: 'Sorted Small to Large', sortDescendingAriaLabel: 'Sorted Large to Small', onColumnClick: this._onColumnClick },
       { key: 'Approvals_title', name: 'Title', fieldName: 'title', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
       { key: 'Approvals_subject', name: 'Subject', fieldName: 'subject', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
       { key: 'Approvals_outcome', name: 'Outcome', fieldName: 'outcome', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
+      {
+        key: 'Child_Approval_Source_display_name',
+        name: 'Source',
+        fieldName: 'child_approval_source_display_name',
+        minWidth: 150,
+        maxWidth: 200,
+        isResizable: true,
+        onColumnClick: this._onColumnClick 
+      },
       { key: 'Approvals_entity_name', name: 'Entity Name', fieldName: 'entity_name', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick },
       { key: 'Approvals_created_datetime', name: 'Created Date', fieldName: 'created_datetime', minWidth: 100, maxWidth: 100, isResizable: true, onColumnClick: this._onColumnClick, onRender: (item: IApproval) => new Date(item.created_datetime).toLocaleDateString() },
       {
@@ -122,7 +135,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
             overflowButtonProps={overflowButtonProps}
           />
         )
-      },
+      }
     ];
 
     this._selection = new Selection({
@@ -156,6 +169,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   componentDidUpdate(prevProps: IMyApprovalsTableProps, prevState: IMyApprovalTableState) {
     if (prevProps.filters !== this.props.filters || prevProps.userToken !== this.props.userToken) {
       this.handleFetchData(this.props.filters);
+      this.fetchRequestersAndApprovers();
       return;
     }
 
@@ -333,7 +347,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   
 
   public render() {
-    const { columns, isCompactMode, items, selectionDetails, isModalSelection, loading, error, requesters, approvers } = this.state;
+    const { columns, isCompactMode, items, selectionDetails, isModalSelection, loading, error, requesters, approvers} = this.state;
     const { filters, setFilters } = this.props;
 
     return (

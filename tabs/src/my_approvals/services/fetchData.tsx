@@ -42,7 +42,6 @@ export async function fetchData({ userToken, filters, onStateUpdate }: FetchData
     // Append array filters as JSON strings
     formData.append('approvalRecordFilters', JSON.stringify(filters.approvalRecordFilters));
     formData.append('approvalGroupFilters', JSON.stringify(filters.approvalGroupFilters));
-    console.log('user filters length', JSON.stringify(filters.approvalUserFilters))
     formData.append('approvalUserFilters', JSON.stringify(filters.approvalUserFilters));
 
     console.log('record filters length', filters.approvalRecordFilters.length)
@@ -155,7 +154,8 @@ function restructureData(data: any[], userToken: string): IApproval[] {
         created_datetime: record.Approvals_created_datetime,
         icon: record.Approvals_icon,
         groups: [],
-        approval_members: []
+        approval_members: [],
+        child_approval_source_display_name: record.Child_Approval_Source_display_name
       };
     }
 

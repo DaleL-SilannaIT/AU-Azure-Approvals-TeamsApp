@@ -81,12 +81,12 @@ export async function data(
     }
 
     const approvalFilters: ApprovalFilters = { approvalRecordFilters, approvalGroupFilters, approvalUserFilters, topCount, sortField, sortOrder, skipCount };
-    let query = `SELECT TOP 50 * FROM Approvals`;
-    console.log("Initial query:", query);
+    let query = ``;
     query = await FilterQueryBuilder(approvalFilters, claims.payload.oid, secGrps);
     console.log("Constructed query:", query);
 
     const resultSet = await poolConnection.request().query(query);
+    console.log("Query executed", resultSet);
     console.log(`${resultSet.recordset.length} rows returned.`);
 
     // Close connection only when we're certain application is finished

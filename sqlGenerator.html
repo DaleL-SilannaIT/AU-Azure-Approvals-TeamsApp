@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+
+</html>
+
+<script>
+    let tableName = 'Approvals';
+    let users = ["dalel@silanna.com", "navn@silanna.com", "au-itdev06@silanna.com", "au-itdev07@silanna.com"]
+    let sqlQueries = [];
+    let sql = '';
+    let outcomes = ['Approved', 'Rejected', 'Pending'];
+    
+    for (let id = 1; id < 90; id++) {
+        let title = generateRandomString();
+        let subject = generateRandomString();
+        let outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+        let entity_name = generateRandomString();
+        let timestamp = generateRandomTimestamp();
+
+        sql = `UPDATE ${tableName} SET title='${title}', subject='${subject}', outcome='${outcome}', entity_name='${entity_name}', created_datetime='${timestamp}' WHERE id = ${id};`;
+        //sqlQueries.push(sql);
+        let p = document.createElement('p');
+        p.innerHTML = sql
+
+        document.body.appendChild(p);
+    }
+    let finalSQL = sqlQueries.join('\r\n');
+    //document.getElementsByTagName('b')[0].innerHTML = finalSQL;
+    console.log(finalSQL);
+
+    function generateRandomString() {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        let result = '';
+        for (let i = 0; i < 5; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            result += characters[randomIndex];
+        }
+        return result;
+    }
+
+    function generateRandomTimestamp() {
+        const now = new Date();
+        const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        const randomTime = oneYearAgo.getTime() + Math.random() * (now.getTime() - oneYearAgo.getTime());
+        return new Date(randomTime).toISOString();
+    }
+</script>

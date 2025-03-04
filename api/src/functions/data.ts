@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext, HttpMethod } from "@azure/functions";
 import sql from 'mssql';
 import { dbConfig } from '../database/dbConfig';
-import { ApprovalRecord } from '../database/interfaces/approvalRecord';
+import { ApprovalRecordSet } from '../database/interfaces/approvalRecordSet';
 import { ApprovalFilters, ApprovalRecordFilters, ApprovalGroupFilters, ApprovalUserFilters } from '../database/interfaces/filters';
 import { FilterQueryBuilder } from "../database/filterQueryBuilder";
 import { verifyJWT } from "../security/verifyJWT";
@@ -43,8 +43,9 @@ export async function data(
     // Parse form-data parameters
     const params = await req.formData();
     console.log("Form data parameters:", params);
-    const sortField = params.get('sortField') as keyof ApprovalRecord | undefined;
-    const sortOrder = params.get('sortOrder') === 'desc' ? 'DESC' : 'ASC';
+    const sortField = params.get('sortField') as keyof ApprovalRecordSet | undefined;
+    const sortOrder = params.get('sortOrder') === 'DESC' ? 'DESC' : 'ASC';
+    console.log('Sort field:', sortField, 'Sort order:', sortOrder);
     const topCount = params.get('topCount') ? parseInt(params.get('topCount') as string) : 50;
     const skipCount = params.get('skipCount') ? parseInt(params.get('skipCount') as string) : 0;
     let approvalRecordFilters: ApprovalRecordFilters[] = [];

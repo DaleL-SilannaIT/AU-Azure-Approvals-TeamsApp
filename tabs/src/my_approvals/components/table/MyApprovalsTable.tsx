@@ -18,6 +18,7 @@ import { fetchData } from '../../services/fetchData';
 import { IApprover, IRequester } from '../../services/Interfaces';
 import { Text } from '@fluentui/react/lib/Text';
 import axios from 'axios';
+import { ApprovalRecordSet } from '../../../../../api/src/database/interfaces/approvalRecordSet';
 import './MyApprovalsTable.css';
 
 const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
@@ -66,6 +67,7 @@ const MemoizedFacepile = React.memo(({
 export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IMyApprovalTableState> {
   private _selection: Selection;
   private userId: string | undefined;
+  private isFetching: boolean = false;
   
   constructor(props: IMyApprovalsTableProps) {
     super(props);
@@ -178,7 +180,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     if (prevState.items !== this.state.items && 
         prevProps.filters === this.props.filters) {
       console.log('Items changed, updating profiles');
-      this.updateUserProfiles(this.state.items); // Pass all items at once
+      this.updateUserProfiles(this.state.items); // Parse all items at once
     }
   }
 
@@ -189,15 +191,16 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   };
 
   private handleFetchData = async (filters: ApprovalFilters, showLoading: boolean) => {
-    if (!this.props.userToken) return;
-  
-    const updatedFilters = { ...filters, skipCount: this.state.skipCount, topCount: this.state.topCount };
-  
-    // Clear existing items if skipCount is 0
-    if (this.state.skipCount === 0) {
-      this.setState({ items: [] });
+    if (!this.props.userToken || this.isFetching) return;
+    this.isFetching = true;
+    // Clear existing items if skipCount is 0 or if sorting
+    if (this.state.skipCount === 0 || filters.sortField !== this.props.filters.sortField || filters.sortOrder !== this.props.filters.sortOrder) {
+      this.setState({ items: [], skipCount: 0 });
     }
-  
+    const updatedFilters = { ...filters, skipCount: this.state.skipCount, topCount: this.state.topCount };
+
+    
+
     await fetchData({
       userToken: this.props.userToken,
       filters: updatedFilters,
@@ -212,6 +215,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     });
 
     this.setState({ loadMoreDisabled: false, skipCount: this.state.items.length });
+    this.isFetching = false;
   };
 
   private fetchRequestersAndApprovers = async () => {
@@ -446,9 +450,10 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   }
 
   private _onColumnClick = (ev: React.MouseEvent<HTMLElement>, column: IColumn): void => {
-    const { columns, items } = this.state;
-    const newColumns: IColumn[] = columns.slice();
+    const { filters, setFilters } = this.props;
+    const newColumns: IColumn[] = this.state.columns.slice();
     const currColumn: IColumn = newColumns.filter(currCol => column.key === currCol.key)[0];
+    
     newColumns.forEach((newCol: IColumn) => {
       if (newCol === currColumn) {
         currColumn.isSortedDescending = !currColumn.isSortedDescending;
@@ -458,10 +463,22 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         newCol.isSortedDescending = true;
       }
     });
-    const newItems = _copyAndSort(items, currColumn.fieldName!, currColumn.isSortedDescending);
+
+    const newSortOrder = currColumn.isSortedDescending ? "DESC" as "DESC" : "ASC" as "ASC";
+    const newFilters = {
+      ...filters,
+      sortField: currColumn.key as keyof ApprovalRecordSet,
+      sortOrder: newSortOrder,
+      skipCount: 0 // Reset skipCount
+    };
+
+    this.setState({ skipCount: 0, items: [] });
+
+    setFilters(newFilters);
+    this.handleFetchData(newFilters, true);
+
     this.setState({
-      columns: newColumns,
-      items: newItems
+      columns: newColumns
     });
   };
 }

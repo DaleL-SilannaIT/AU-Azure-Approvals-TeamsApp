@@ -5,7 +5,6 @@ import { fetchPhotosForApproval } from './userPhotos';
 import { PersonaPresence } from '@fluentui/react/lib/Persona';
 import jwtDecode, { JwtPayload } from 'jwt-decode';
 
-
 interface FetchDataOptions {
   userToken: string;
   filters: ApprovalFilters;
@@ -19,7 +18,7 @@ interface FetchDataOptions {
   showLoading: boolean;
 }
 
-export async function fetchData({ userToken, filters, onStateUpdate, showLoading=true }: FetchDataOptions) {
+export async function fetchData({ userToken, filters, onStateUpdate, showLoading = true }: FetchDataOptions) {
   if (!userToken) {
     console.log('No userToken available, aborting fetch');
     return;
@@ -30,7 +29,6 @@ export async function fetchData({ userToken, filters, onStateUpdate, showLoading
   if (showLoading) {
     onStateUpdate({ loading: true });
   }
-  
 
   try {
     const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
@@ -40,7 +38,7 @@ export async function fetchData({ userToken, filters, onStateUpdate, showLoading
     (Object.keys(filters) as (keyof ApprovalFilters)[]).forEach(key => {
       if (!Array.isArray(filters[key]) && typeof filters[key] !== 'object') {
         formData.append(key, filters[key] as string);
-        console.log(`Adding filter: ${key}=${filters[key]}`); // Debug log
+        console.log(`Adding filter: ${key}="${filters[key]}"`); // Debug log
       }
     });
 
@@ -49,8 +47,8 @@ export async function fetchData({ userToken, filters, onStateUpdate, showLoading
     formData.append('approvalGroupFilters', JSON.stringify(filters.approvalGroupFilters));
     formData.append('approvalUserFilters', JSON.stringify(filters.approvalUserFilters));
 
-    console.log('record filters length', filters.approvalRecordFilters.length)
-    console.log('Stringified record filters', JSON.stringify(filters.approvalRecordFilters))
+    console.log('record filters length', filters.approvalRecordFilters.length);
+    console.log('Stringified record filters', JSON.stringify(filters.approvalRecordFilters));
     let headers = new Headers();
     headers.append('token', userToken);
 
@@ -145,6 +143,8 @@ async function updateUserProfilesAsync(
 
 function restructureData(data: any[], userToken: string): IApproval[] {
   const approvalsMap: { [key: string]: IApproval } = {};
+  const approvalOrder: string[] = []; // Array to maintain the order of approval IDs
+
   // Decode the token here using the passed userToken
   const decodedToken = userToken ? jwtDecode<IDecodedToken>(userToken) : null;
 
@@ -162,6 +162,7 @@ function restructureData(data: any[], userToken: string): IApproval[] {
         approval_members: [],
         child_approval_source_display_name: record.Child_Approval_Source_display_name
       };
+      approvalOrder.push(record.Approvals_id); // Add the approval ID to the order array
     }
 
     const approval = approvalsMap[record.Approvals_id];
@@ -188,7 +189,7 @@ function restructureData(data: any[], userToken: string): IApproval[] {
     group.users.push(user);
 
     // Add user to approval_members if not already present
-    if (!approval.approval_members.some(member => member.id === user.Approval_Users_id)) {
+    if (!approval.approval_members.some(member => member.data.objectId === user.Approval_Users_object_id)) {
       approval.approval_members.push({
         personaName: user.Approval_Users_display_name,
         imageUrl: '', // Add appropriate image URL if available
@@ -201,9 +202,9 @@ function restructureData(data: any[], userToken: string): IApproval[] {
       });
     }
   });
-    
-  const approvals = Object.values(approvalsMap);
-  
-  // Remove the updateUserProfiles call since it's handled in fetchData
+
+  // Construct the final sorted list of approvals based on the original order
+  const approvals = approvalOrder.map(id => approvalsMap[id]);
+
   return approvals;
 }

@@ -7,7 +7,7 @@ export async function FilterQueryBuilder(filters: ApprovalFilters, object_id: st
     const approvalUsersQuery = ApprovalUserHandler(filters.approvalUserFilters);
     console.log('Approval users query:', approvalUsersQuery);
 
-    const userQuery = UserScopeHandler(object_id, userSecGrps);
+    const userQuery = UserScopeHandler(filters, object_id, userSecGrps);
     console.log('User query:', userQuery);
 
     const filterQuery = FilterHandler(userQuery, filters);
@@ -62,8 +62,10 @@ function CastValue(value: string, value_type: 'number' | 'string' | 'boolean' | 
     }
 }
 
-function UserScopeHandler(object_id: string, userSecGrps: string[]): string {
+function UserScopeHandler(filters: ApprovalFilters,object_id: string, userSecGrps: string[]): string {
     //const groups = await fetchUserSecurityGroups(object_id);
+    
+
     let userQuery = `SELECT 
             Approvals.id AS Approvals_id,
             Approvals.active AS Approvals_active,
@@ -80,13 +82,16 @@ function UserScopeHandler(object_id: string, userSecGrps: string[]): string {
             Approvals.has_attachments AS Approvals_has_attachments,
             Approvals.icon AS Approvals_icon,
             Approvals.created_datetime AS Approvals_created_datetime,
-            Approvals.attachments AS Approvals_attachments
+            Approvals.attachments AS Approvals_attachments,
+            Child_Approval_Sources.display_name AS Child_Approval_Source_display_name
         FROM Approvals 
         INNER JOIN Approval_Groups ON Approvals.id = Approval_Groups.approval_id
-        INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id`;
+        INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id
+        INNER JOIN Child_Approval_Sources ON Approvals.source_id = Child_Approval_Sources.id`;
 
     // add in logic here to check if a user is an admin, processor or normal user
-    userQuery += ` WHERE Approval_Users.object_id = '${object_id}'`
+    userQuery += ` 
+    WHERE Approval_Users.object_id = '${object_id}'`
     // if (groups.length > 0) {
     //     console.log('User belongs to security groups:', groups);
     //     const groupConditions = groups.map(groupId => `Approval_Users.group_id = '${groupId}'`).join(' OR ');
@@ -94,6 +99,8 @@ function UserScopeHandler(object_id: string, userSecGrps: string[]): string {
     // } else {
     //     baseQuery += ` WHERE Approval_Users.object_id = '${object_id}'`;
     // }
+
+    
 
     return userQuery;
 }
@@ -235,6 +242,17 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
     let filterQuery = `${userQuery}`
     let whereClauses: string[] = [];
 
+    let orderByQuery = '';
+    console.log("SORT ORDER: ", filters.sortOrder);
+
+    if (filters.sortField === "Approvals_id") {
+        orderByQuery = ` 
+        ORDER BY ${filters.sortField} ${filters.sortOrder}`;
+    } else {
+        orderByQuery = ` 
+        ORDER BY ${filters.sortField} ${filters.sortOrder}, Approvals_id DESC`;
+    }
+
     Object.keys(filters).forEach(key => {
         if (Array.isArray(filters[key])) {
             for (const filter of filters[key]) {
@@ -303,8 +321,8 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
         )`
     }
     filterQuery +=
-        ` ORDER BY ${tableName}.id ASC
-    OFFSET ${filters.skipCount} ROWS 
+        ` ${orderByQuery}
+        OFFSET ${filters.skipCount} ROWS 
     FETCH NEXT ${filters.topCount} ROWS ONLY`;
 
     return filterQuery;
@@ -314,6 +332,7 @@ function InnerJoinHandler(filterQuery: string, approvalUsersQuery: string, filte
     const tableName = 'TopApprovals';
     let innerJoinQuery = '';
     let orderByQuery = '';
+    console.log("SORT ORDER: ", filters.sortOrder);
 
     if (filters.sortField === "Approvals_id") {
         orderByQuery = `ORDER BY ${filters.sortField} ${filters.sortOrder}`;
@@ -363,7 +382,7 @@ function InnerJoinHandler(filterQuery: string, approvalUsersQuery: string, filte
     INNER JOIN Approval_Groups ON TopApprovals.Approvals_id = Approval_Groups.approval_id
     INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id
     INNER JOIN child_approval_sources ON TopApprovals.Approvals_source_id = child_approval_sources.id
-    ${orderByQuery};`;
+    ${orderByQuery}`;
 
     return innerJoinQuery;
 }

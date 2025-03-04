@@ -27,9 +27,6 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
   requesters,
   approvers
 }) => {
-  console.log('Requesters in MyApprovalsFilters:', requesters);
-  console.log('Approvers in MyApprovalsFilters:', approvers);
-
   const [advancedFilters, setAdvancedFilters] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [idFilter, setIdFilter] = useState<string>('');

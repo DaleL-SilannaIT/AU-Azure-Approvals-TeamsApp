@@ -10,7 +10,7 @@ export const MyApprovals: React.FC = () => {
   const [filters, setFilters] = useState<ApprovalFilters>({
     sortField: 'Approvals_id',
     sortOrder: 'DESC',
-    topCount: 100,
+    topCount: 10,
     skipCount: 0,
     approvalRecordFilters: [],
     approvalGroupFilters: [],

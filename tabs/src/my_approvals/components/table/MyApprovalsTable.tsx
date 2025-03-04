@@ -8,7 +8,7 @@ import { DetailsListLayoutMode, Selection, SelectionMode, IColumn } from '@fluen
 import { MarqueeSelection } from '@fluentui/react/lib/MarqueeSelection';
 import { mergeStyleSets } from '@fluentui/react/lib/Styling';
 import { MyApprovalsFilters } from '../filters/MyApprovalsFilters';
-import { ShimmeredDetailsList } from '@fluentui/react';
+import { DefaultButton, ShimmeredDetailsList } from '@fluentui/react';
 import { Facepile, OverflowButtonType, IFacepilePersona } from '@fluentui/react/lib/Facepile';
 import { PersonaPresence, PersonaSize } from '@fluentui/react/lib/Persona';
 import { fetchPhotosForApproval, fetchUserPhoto } from '../../services/userPhotos';
@@ -16,7 +16,9 @@ import { fetchUserPresence } from '../../services/userPresence';
 import { IMyApprovalTableState, IApproval, IGroup, IUser, IMyApprovalsTableProps, IUserPresence, IDecodedToken } from '../../services/Interfaces';
 import { fetchData } from '../../services/fetchData';
 import { IApprover, IRequester } from '../../services/Interfaces';
+import { Text } from '@fluentui/react/lib/Text';
 import axios from 'axios';
+import './MyApprovalsTable.css';
 
 const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';
 
@@ -75,9 +77,6 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       console.log(props.userToken);
     }
 
-    const pagination = 10;
-    const rowsReturned = 0;
-
     const overflowButtonProps = {
       ariaLabel: 'More users',
       onClick: (ev: React.MouseEvent<HTMLButtonElement>) => alert('overflow icon clicked'),
@@ -92,7 +91,6 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
         maxWidth: 51,
         isResizable: true,
         onRender: (item: IApproval) => (
-          console.log(item),
           <img
             src={item.icon}
             alt="Approval Icon1"
@@ -157,18 +155,21 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       photos: {}, // Add this line
       presence: {},
       requesters: [],
-      approvers: []
+      approvers: [],
+      skipCount: 0,
+      topCount: 10,
+      loadMoreDisabled: false
     };
   }
 
   componentDidMount() {
-    this.handleFetchData(this.props.filters);
+    this.handleFetchData(this.props.filters, true);
     this.fetchRequestersAndApprovers();
   }
 
   componentDidUpdate(prevProps: IMyApprovalsTableProps, prevState: IMyApprovalTableState) {
     if (prevProps.filters !== this.props.filters || prevProps.userToken !== this.props.userToken) {
-      this.handleFetchData(this.props.filters);
+      this.setState({ skipCount: 0 }, () => this.handleFetchData(this.props.filters, true));
       this.fetchRequestersAndApprovers();
       return;
     }
@@ -181,19 +182,36 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     }
   }
 
-  private handleFetchData = async (filters: ApprovalFilters) => {
-    if (!this.props.userToken) return;
+  loadMoreData = (showLoading: boolean) => {
+    this.setState(prevState => ({
+      skipCount: prevState.items.length
+    }), () => this.handleFetchData(this.props.filters, showLoading));
+  };
 
+  private handleFetchData = async (filters: ApprovalFilters, showLoading: boolean) => {
+    if (!this.props.userToken) return;
+  
+    const updatedFilters = { ...filters, skipCount: this.state.skipCount, topCount: this.state.topCount };
+  
+    // Clear existing items if skipCount is 0
+    if (this.state.skipCount === 0) {
+      this.setState({ items: [] });
+    }
+  
     await fetchData({
       userToken: this.props.userToken,
-      filters,
+      filters: updatedFilters,
       onStateUpdate: (updates) => {
         this.setState(prevState => ({
           ...prevState,
-          ...updates
+          ...updates,
+          items: [...prevState.items, ...(updates.items || [])]
         }));
-      }
+      },
+      showLoading: showLoading
     });
+
+    this.setState({ loadMoreDisabled: false, skipCount: this.state.items.length });
   };
 
   private fetchRequestersAndApprovers = async () => {
@@ -353,6 +371,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
     return (
       <Fabric>
         <div className="my-approvals-filters-container">
+          <Text>{this.state.items.length} Record{this.state.items.length == 1? "":"s"}</Text>
           <MyApprovalsFilters
             filters={filters}
             onApplyFilters={setFilters}
@@ -382,10 +401,19 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
             onRenderItemColumn={this.onRenderItemColumn}
           />
         </MarqueeSelection>
+        <div id="load-more-div">
+          <DefaultButton text="More" onClick={this._loadMoreClicked} allowDisabledFocus disabled={this.state.loadMoreDisabled}/>
+        </div>
       </Fabric>
     );
   }
 
+  private _loadMoreClicked = () => {
+    console.log("Skip Count: " + this.state.skipCount);
+    this.setState({ loadMoreDisabled: true });
+    console.log('Load more clicked');
+    this.loadMoreData(false);
+  };
   private _onChangeCompactMode = (ev: React.MouseEvent<HTMLElement>, checked?: boolean): void => {
     this.setState({ isCompactMode: !!checked });
   };

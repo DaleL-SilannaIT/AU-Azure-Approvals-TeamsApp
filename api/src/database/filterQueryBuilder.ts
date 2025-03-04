@@ -303,7 +303,7 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
         )`
     }
     filterQuery +=
-        ` ORDER BY ${tableName}.id
+        ` ORDER BY ${tableName}.id ASC
     OFFSET ${filters.skipCount} ROWS 
     FETCH NEXT ${filters.topCount} ROWS ONLY`;
 
@@ -313,6 +313,13 @@ function FilterHandler(userQuery: string, filters: ApprovalFilters): string {
 function InnerJoinHandler(filterQuery: string, approvalUsersQuery: string, filters: ApprovalFilters): string {
     const tableName = 'TopApprovals';
     let innerJoinQuery = '';
+    let orderByQuery = '';
+
+    if (filters.sortField === "Approvals_id") {
+        orderByQuery = `ORDER BY ${filters.sortField} ${filters.sortOrder}`;
+    } else {
+        orderByQuery = `ORDER BY ${filters.sortField} ${filters.sortOrder}, Approvals_id DESC`;
+    }
 
     if (JSON.parse(filters.approvalUserFilters.requestersFilters.value).length > 0 || JSON.parse(filters.approvalUserFilters.approversFilters.value).length > 0) {
         innerJoinQuery += approvalUsersQuery;
@@ -355,7 +362,8 @@ function InnerJoinHandler(filterQuery: string, approvalUsersQuery: string, filte
     FROM (${filterQuery}) AS ${tableName}
     INNER JOIN Approval_Groups ON TopApprovals.Approvals_id = Approval_Groups.approval_id
     INNER JOIN Approval_Users ON Approval_Groups.id = Approval_Users.group_id
-    INNER JOIN child_approval_sources ON TopApprovals.Approvals_source_id = child_approval_sources.id;`;
+    INNER JOIN child_approval_sources ON TopApprovals.Approvals_source_id = child_approval_sources.id
+    ${orderByQuery};`;
 
     return innerJoinQuery;
 }

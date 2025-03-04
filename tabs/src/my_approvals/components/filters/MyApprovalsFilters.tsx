@@ -59,7 +59,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
   const updateFilters = useCallback((): ApprovalFilters => {
     const newFilters: ApprovalFilters = {
-      sortField: 'id',
+      sortField: "Approvals_id",
       sortOrder: 'DESC',
       topCount: 10,
       skipCount: 0,
@@ -254,6 +254,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
   const applyFilters = useCallback(() => {
     const newFilters = updateFilters();
+    newFilters.skipCount = 0; // Reset skipCount
     console.log('Applying filters:', newFilters); // Debug log
 
     // Serialize the approvalUserFilters object
@@ -270,30 +271,32 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     formData.append('approvalGroupFilters', JSON.stringify(newFilters.approvalGroupFilters));
     formData.append('approvalUserFilters', serializedApprovalUserFilters);
     formData.forEach((value, key) => {
-      console.log(key, value)});
+      console.log(key, value)
+    });
+
     // Send the filters to the API
     fetch(`${endpoint}/api/data`, {
-        method: 'POST',
-        headers: {
-            'token': userToken
-        },
-        body: formData
+      method: 'POST',
+      headers: {
+        'token': userToken
+      },
+      body: formData
     })
     .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => { throw new Error(text) });
-        }
-        return response.json();
+      if (!response.ok) {
+        return response.text().then(text => { throw new Error(text) });
+      }
+      return response.json();
     })
     .then(data => {
-        console.log('API response:', data);
-        onApplyFilters(newFilters);
-        setIsOpen(false);
+      console.log('API response:', data);
+      onApplyFilters(newFilters);
+      setIsOpen(false);
     })
     .catch(error => {
-        console.error('Error applying filters:', error);
+      console.error('Error applying filters:', error);
     });
-}, [updateFilters, onApplyFilters, userToken]);
+  }, [updateFilters, onApplyFilters, userToken]);
 
   const clearFilters = useCallback(() => {
     setIdFilter('');
@@ -314,7 +317,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
     setApproversDropdownSelectedKeys([]);
 
     const defaultFilters: ApprovalFilters = {
-      sortField: 'id',
+      sortField: "Approvals_id",
       sortOrder: 'DESC',
       topCount: 10,
       skipCount: 0,

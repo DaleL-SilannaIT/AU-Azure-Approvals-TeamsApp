@@ -8,7 +8,7 @@ export const MyApprovals: React.FC = () => {
   const { userToken, accessToken } = useContext(TeamsFxContext);
   const { teamsUserCredential } = useContext(TeamsFxContext);
   const [filters, setFilters] = useState<ApprovalFilters>({
-    sortField: 'id',
+    sortField: 'Approvals_id',
     sortOrder: 'DESC',
     topCount: 100,
     skipCount: 0,

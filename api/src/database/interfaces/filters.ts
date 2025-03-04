@@ -1,6 +1,7 @@
 import type { ApprovalRecord } from './approvalRecord';
 import type { ApprovalGroup } from './approvalGroup';
 import type { ApprovalUser } from './approvalUser';
+import type { ApprovalRecordSet } from './approvalRecordSet';
 
 export interface ApprovalRecordFilters {
     tableName: 'Approvals'
@@ -52,7 +53,7 @@ export interface ApprovalFilters {
     approvalUserFilters: ApprovalUserFilters;
 
     topCount: number;
-    sortField: keyof ApprovalRecord;
+    sortField: keyof ApprovalRecordSet;
     sortOrder: 'ASC' | 'DESC';
     skipCount: number;
   }

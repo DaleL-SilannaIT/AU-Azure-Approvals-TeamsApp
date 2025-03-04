@@ -16,16 +16,21 @@ interface FetchDataOptions {
     photos?: { [upn: string]: string | undefined };
     presence?: { [objectId: string]: PersonaPresence };
   }) => void;
+  showLoading: boolean;
 }
 
-export async function fetchData({ userToken, filters, onStateUpdate }: FetchDataOptions) {
+export async function fetchData({ userToken, filters, onStateUpdate, showLoading=true }: FetchDataOptions) {
   if (!userToken) {
     console.log('No userToken available, aborting fetch');
     return;
   }
 
   console.log('Starting fetch with filters:', filters);
-  onStateUpdate({ loading: true });
+
+  if (showLoading) {
+    onStateUpdate({ loading: true });
+  }
+  
 
   try {
     const endpoint = process.env.REACT_APP_API_FUNCTION_ENDPOINT || 'http://localhost:7071';

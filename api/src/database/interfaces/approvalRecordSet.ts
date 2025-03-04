@@ -16,6 +16,7 @@ export interface ApprovalRecordSet {
     Approvals_icon: string;
     Approvals_created_datetime: string;
     Approvals_attachments: string;
+    Child_Approval_Source_display_name: string;
 
     //Approval groups
     Approval_Groups_id: number;

@@ -16,6 +16,9 @@ export interface IMyApprovalTableState {
   presence: { [objectId: string]: PersonaPresence };
   approvers: IApprover[];
   requesters: IRequester[];
+  skipCount: number;
+  topCount: number;
+  loadMoreDisabled: boolean;
 }
 
 export interface IApproval {

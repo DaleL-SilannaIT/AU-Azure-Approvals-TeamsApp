@@ -302,10 +302,10 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       // Create sets of distinct user identifiers
       const distinctUserIds = new Set<string>();
       const distinctUpns = new Set<string>();
-      console.log("APPROVALS: ", approvals);
+
       // Collect distinct users across all approvals
       approvals.forEach(approval => {
-        console.log("APPROVAL MEMBERS: ", approval.approval_members);
+   
         approval.approval_members.forEach(member => {
           if (member.data.objectId) {
             distinctUserIds.add(member.data.objectId);

@@ -158,7 +158,6 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       presence: {},
       requesters: [],
       approvers: [],
-      skipCount: 0,
       topCount: 10,
       loadMoreDisabled: false
     };
@@ -171,7 +170,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
 
   componentDidUpdate(prevProps: IMyApprovalsTableProps, prevState: IMyApprovalTableState) {
     if (prevProps.filters !== this.props.filters || prevProps.userToken !== this.props.userToken) {
-      this.setState({ skipCount: 0 }, () => this.handleFetchData(this.props.filters, true));
+      this.handleFetchData(this.props.filters, true);
       this.fetchRequestersAndApprovers();
       return;
     }
@@ -185,21 +184,22 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   }
 
   loadMoreData = (showLoading: boolean) => {
-    this.setState(prevState => ({
-      skipCount: prevState.items.length
-    }), () => this.handleFetchData(this.props.filters, showLoading));
+    const { filters, setFilters } = this.props;
+    setFilters({
+      ...filters,
+      skipCount: this.state.items.length
+    });
+    this.handleFetchData(this.props.filters, showLoading);
   };
 
   private handleFetchData = async (filters: ApprovalFilters, showLoading: boolean) => {
     if (!this.props.userToken || this.isFetching) return;
     this.isFetching = true;
     // Clear existing items if skipCount is 0 or if sorting
-    if (this.state.skipCount === 0 || filters.sortField !== this.props.filters.sortField || filters.sortOrder !== this.props.filters.sortOrder) {
-      this.setState({ items: [], skipCount: 0 });
+    if (filters.skipCount === 0 || filters.sortField !== this.props.filters.sortField || filters.sortOrder !== this.props.filters.sortOrder) {
+      this.setState({ items: [] });
     }
-    const updatedFilters = { ...filters, skipCount: this.state.skipCount, topCount: this.state.topCount };
-
-    
+    const updatedFilters = { ...filters, topCount: this.state.topCount };
 
     await fetchData({
       userToken: this.props.userToken,
@@ -214,7 +214,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       showLoading: showLoading
     });
 
-    this.setState({ loadMoreDisabled: false, skipCount: this.state.items.length });
+    this.setState({ loadMoreDisabled: false });
     this.isFetching = false;
   };
 
@@ -413,7 +413,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   }
 
   private _loadMoreClicked = () => {
-    console.log("Skip Count: " + this.state.skipCount);
+    console.log("Skip Count: " + this.props.filters.skipCount);
     this.setState({ loadMoreDisabled: true });
     console.log('Load more clicked');
     this.loadMoreData(false);
@@ -472,7 +472,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       skipCount: 0 // Reset skipCount
     };
 
-    this.setState({ skipCount: 0, items: [] });
+    this.setState({ items: [] });
 
     setFilters(newFilters);
     this.handleFetchData(newFilters, true);

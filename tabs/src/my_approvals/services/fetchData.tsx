@@ -186,21 +186,19 @@ function restructureData(data: any[], userToken: string): IApproval[] {
       Approval_Users_object_id: record.Approval_Users_object_id
     };
 
-    group.users.push(user);
 
-    // Add user to approval_members if not already present
-    if (!approval.approval_members.some(member => member.data.objectId === user.Approval_Users_object_id)) {
-      approval.approval_members.push({
-        personaName: user.Approval_Users_display_name,
-        imageUrl: '', // Add appropriate image URL if available
-        imageInitials: user.Approval_Users_display_name.split(' ').map((name: string) => name[0]).join(''),
-        data: {
-          upn: user.Approval_Users_upn,
-          presence: PersonaPresence.offline,
-          objectId: user.Approval_Users_object_id // Add the object ID from the token
-        }
-      });
-    }
+
+    group.users.push(user);
+    approval.approval_members.push({
+      personaName: user.Approval_Users_display_name,
+      imageUrl: '', // Add appropriate image URL if available
+      imageInitials: user.Approval_Users_display_name.split(' ').map((name: string) => name[0]).join(''),
+      data: {
+        upn: user.Approval_Users_upn,
+        presence: PersonaPresence.offline,
+        objectId: user.Approval_Users_object_id // Add the object ID from the token
+      }
+    });
   });
 
   // Construct the final sorted list of approvals based on the original order

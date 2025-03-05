@@ -166,6 +166,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   componentDidMount() {
     this.handleFetchData(this.props.filters, true);
     this.fetchRequestersAndApprovers();
+    this.updateUserProfiles(this.state.items);
   }
 
   componentDidUpdate(prevProps: IMyApprovalsTableProps, prevState: IMyApprovalTableState) {
@@ -292,7 +293,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
   };
 
   private async updateUserProfiles(approvals: IApproval[]): Promise<void> {
-    if (!this.props.accessToken || !this.props.userToken) {
+    if (!this.props.userToken) {
       console.log('No tokens available, skipping profile updates');
       return;
     }
@@ -301,9 +302,10 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       // Create sets of distinct user identifiers
       const distinctUserIds = new Set<string>();
       const distinctUpns = new Set<string>();
-      
+      console.log("APPROVALS: ", approvals);
       // Collect distinct users across all approvals
       approvals.forEach(approval => {
+        console.log("APPROVAL MEMBERS: ", approval.approval_members);
         approval.approval_members.forEach(member => {
           if (member.data.objectId) {
             distinctUserIds.add(member.data.objectId);
@@ -323,7 +325,7 @@ export class MyApprovalsTable extends React.Component<IMyApprovalsTableProps, IM
       if (distinctUserIds.size > 0) {
         console.log('Fetching presence for distinct users:', Array.from(distinctUserIds));
         const presenceMap = await fetchUserPresence(Array.from(distinctUserIds), this.props.userToken);
-        
+        console.log('Presence map:', presenceMap);
         if (presenceMap.size > 0) {
           hasUpdates = true;
           this.setState(prevState => ({

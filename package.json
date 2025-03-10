@@ -8,7 +8,7 @@
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "swa build"
+        "build": "teamsapp deploy --env dev"
     },
     "devDependencies": {
         "@microsoft/teamsfx-cli": "1.*"

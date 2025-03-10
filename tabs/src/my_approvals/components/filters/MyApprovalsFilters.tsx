@@ -353,7 +353,7 @@ export const MyApprovalsFilters: React.FC<MyApprovalsFiltersProps> = ({
 
     
     // Send the filters to the API
-    i am here
+  
     fetch(`${endpoint}/api/data`, {//investigate why this doesn't call the fetchData() funciton and instead makes an API call
         method: 'POST',
         headers: {

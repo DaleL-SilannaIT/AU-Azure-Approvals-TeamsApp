@@ -43,6 +43,8 @@ jobs:
           app-name: 'au-azure-approvals-dev'
           package: 'api'
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          sku: flexconsumption
+          remote-build: true
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
